@@ -1,0 +1,62 @@
+# ─── Environment files (NEVER commit — contain secrets) ───────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── Flutter ──────────────────────────────────────────────────────────────────
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# VSCode
+.vscode/
+
+# Flutter/Dart/Pub related files
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+pubspec.lock
+
+# Web related
+lib/generated_plugin_registrant.dart
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ─── Supabase ─────────────────────────────────────────────────────────────────
+.supabase/
+# Local Supabase data (Docker volumes)
+supabase/.temp/
+
+# ─── Node / general ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+*.local
