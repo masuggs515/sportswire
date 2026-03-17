@@ -43,10 +43,12 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - All BallDontLie calls go through `_shared/bdl_client.ts` — never call fetch directly
 
 ### ESPN RSS (News)
-- NBA: `https://www.espn.com/espn/rss/nba/news`
-- NFL: `https://www.espn.com/espn/rss/nfl/news`
+- NBA:   `https://www.espn.com/espn/rss/nba/news`
+- NFL:   `https://www.espn.com/espn/rss/nfl/news`
+- NCAAB: `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
 - No auth required. Official ESPN feeds. Free.
 - Display headlines and summaries. Always link to full article_url. Required by ESPN ToS.
+- NCAAB scores deferred — BallDontLie covers 350+ college teams; UI decision on how to surface them is Phase 5.
 
 ### Google Gemini Flash Lite (AI Summaries)
 - Model: `gemini-2.5-flash-lite-preview-06-17` — 1,000 RPD on free tier
@@ -321,7 +323,7 @@ Shared by all Edge Functions that call BallDontLie. Handles:
 **BDL requests:** 0 (ESPN RSS only)
 
 Logic:
-1. Fetch `https://www.espn.com/espn/rss/nba/news` and `https://www.espn.com/espn/rss/nfl/news`
+1. Fetch NBA, NFL, and NCAAB ESPN RSS feeds (see ESPN RSS section above)
 2. Parse XML items: extract guid, title, description, link, pubDate, category
 3. For each item: skip if `external_id` already exists in `stories`
 4. Call Gemini Flash with headline + description, request JSON:

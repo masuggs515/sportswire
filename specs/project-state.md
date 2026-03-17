@@ -74,6 +74,7 @@ Current task branch: task/phase1-data-foundation (PR #1 open → dev)
 | 2026-03-16 | Deployment + debugging | — | Applied migrations 001–005. Deployed all 4 Edge Functions. Fixed runtime key name (SUPABASE_SERVICE_ROLE_KEY). Set CLI secrets. fetch-scores ✅ (16 NBA games). fetch-news ✅ (33 stories). fetch-standings ❌ BDL tier. Migration 006 not yet applied. |
 | 2026-03-16 | Bug fixes + Phase 1 wrap | — | fetch-standings disabled (BDL tier). fetch-news Gemini parser fixed + redeployed. fetch-scores period field fixed + redeployed. get-story-detail confirmed working. Phase 1 complete pending Gemini ai_analysis backfill tomorrow. |
 | 2026-03-16 | Phase 2 Flutter Feed | task/phase2-flutter-feed | Flutter project created. Feed screen, game ticker, story card, settings sheet, all Mixpanel events, Riverpod providers, shimmer skeletons, go_router. flutter analyze clean. Story screen is stub only (Phase 3). |
+| 2026-03-16 | NCAAB news + badge fix | task/phase2-flutter-feed | Added NCAAB ESPN RSS to fetch-news. Redeployed. Fixed team badge visibility for dark-primary teams (computeLuminance fallback to accent). Updated specs. |
 
 ---
 

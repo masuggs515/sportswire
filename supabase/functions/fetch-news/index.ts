@@ -4,7 +4,7 @@
  * Triggered by Supabase Cron at :15 and :45 past every hour.
  *
  * Logic:
- *  1. Fetch ESPN RSS for NBA and NFL
+ *  1. Fetch ESPN RSS for NBA, NFL, and NCAAB
  *  2. Parse XML: extract guid, title, description, link, pubDate, category
  *  3. Skip articles already in DB (deduplication on external_id)
  *  4. Call Gemini Flash once per new article — result stored permanently
@@ -19,8 +19,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ─── ESPN RSS feed URLs ───────────────────────────────────────────────────────
 const ESPN_RSS: Record<string, string> = {
-  NBA: "https://www.espn.com/espn/rss/nba/news",
-  NFL: "https://www.espn.com/espn/rss/nfl/news",
+  NBA:   "https://www.espn.com/espn/rss/nba/news",
+  NFL:   "https://www.espn.com/espn/rss/nfl/news",
+  NCAAB: "https://www.espn.com/espn/rss/ncb/news",
 };
 
 // ─── Gemini Flash endpoint ────────────────────────────────────────────────────

@@ -7,7 +7,7 @@
 
 ## Overview
 
-SportsWire is a personal sports news app for NBA and NFL, built in Flutter with Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
+SportsWire is a personal sports news app for NBA, NFL, and NCAAB, built in Flutter with Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
 
 ---
 
@@ -40,13 +40,14 @@ Definition of Done:
 - [ ] Shared BDL client (`_shared/bdl_client.ts`) deployed with rate limiter
 - [ ] All Supabase Vault secrets set: `BALLDONTLIE_API_KEY`, `GOOGLE_AI_KEY`
 - [ ] Cron jobs scheduled: scores every 5 min, news every 30 min, standings every hour
-- [ ] Stories table populating with real ESPN news
+- [ ] Stories table populating with real ESPN news (NBA, NFL, NCAAB)
 - [ ] Games table populating with real BallDontLie scores
 - [ ] Standings table populating with real BallDontLie standings
 - [ ] AI summaries (ai_summary, ai_analysis) present on story rows
 - [ ] `get-story-detail` returns correct assembled payload for a real story ID
 - [ ] All RLS policies verified: public read on content tables, own-only on user_preferences
 - [ ] Teams table seeded with NBA and NFL team data (colors, abbreviations)
+- Note: NCAAB news ingested via ESPN RSS (league = 'NCAAB'). NCAAB scores deferred to Phase 5 — BallDontLie covers 350+ college teams and the UI for surfacing them requires a separate design decision.
 
 ---
 
@@ -103,15 +104,16 @@ Definition of Done:
 ---
 
 ### Phase 5 — More Sports (future)
-**Goal:** Add MLB and NHL with zero Flutter changes.
+**Goal:** Add MLB, NHL, and NCAAB scores/standings with zero Flutter changes to the feed itself.
 
 Definition of Done:
 - [ ] BallDontLie All-Star added for MLB and NHL
 - [ ] ESPN RSS feeds added for MLB and NHL
-- [ ] New Edge Functions or updated existing ones to handle 4 leagues
+- [ ] New Edge Functions or updated existing ones to handle additional leagues
 - [ ] Flutter league tabs updated to show MLB / NHL
 - [ ] Teams table seeded with MLB and NHL data
-- [ ] All existing tests passing with 4-league data
+- [ ] All existing tests passing with expanded league data
+- [ ] NCAAB scores UI decision: how to handle 350+ teams in game ticker and story screen (design decision required before implementation)
 
 ---
 
