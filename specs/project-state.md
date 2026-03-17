@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-16 (session 6)
-Current phase: 1 — Data Foundation (complete pending Gemini backfill)
-Current task branch: task/phase1-data-foundation (PR #1 open → dev)
+Last updated: 2026-03-16 (session 9)
+Current phase: 2 — Flutter Feed (complete pending PR merge — feed screen done, story screen stub)
+Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
 
 ---
 
@@ -31,12 +31,14 @@ Current task branch: task/phase1-data-foundation (PR #1 open → dev)
 ## Open PRs
 
 - PR #1: `task/phase1-data-foundation` → `dev` — https://github.com/masuggs515/sportswire/pull/1
+- PR #2: `task/phase2-flutter-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/2
 
 ---
 
 ## Open TODO MAS Items
 
 - [ ] Review and merge PR #1 (task/phase1-data-foundation → dev) — https://github.com/masuggs515/sportswire/pull/1 — raised 2026-03-16
+- [ ] Review and merge PR #2 (task/phase2-flutter-feed → dev) — https://github.com/masuggs515/sportswire/pull/2 — raised 2026-03-16
 - [ ] Story screen Phase 3 — full layout (score strip, standings table, related stories) per flutter-agent-spec.md §Story Screen — raised 2026-03-16
 - [ ] Phase 3 — add widget tests for feed, settings, and providers per testing-agent-spec.md — raised 2026-03-16
 - [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before Phase 2 — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
@@ -98,7 +100,7 @@ Current task branch: task/phase1-data-foundation (PR #1 open → dev)
 - Local Supabase: not yet started
 - BallDontLie: current tier does not include standings endpoint — fetch-standings disabled until upgraded
 - Google AI (Gemini): model gemini-2.5-flash-lite-preview-06-17 ✅ (gemini-2.0-flash deprecated 2026-03-03), key set ✅, deployed ✅ — backfill required after quota resets at midnight Pacific Time
-- GitHub: repo connected ✅, dev branch pushed ✅, PR #1 open ✅
+- GitHub: repo connected ✅, dev branch pushed ✅, PR #1 open ✅, PR #2 open ✅
 - Mixpanel: ✅ account created, SportsWire project created, token in password manager
 - Cron note: `cleanup` and `recalc-hot` are SQL-only cron jobs — they do NOT appear in the Edge Functions list in the Supabase dashboard. This is correct and expected.
 - Key lesson: Edge Function secrets must use `supabase secrets set` (CLI), NOT Supabase Vault UI. Runtime auto-injects `SUPABASE_SERVICE_ROLE_KEY` (old name), not `SUPABASE_SECRET_KEY`.
