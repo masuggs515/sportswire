@@ -77,6 +77,18 @@ Current task branch: task/phase1-data-foundation (PR #1 open → dev)
 
 ---
 
+## Run Commands
+
+| Command | What it does |
+|---|---|
+| `bash scripts/run_dev.sh` | Run Flutter app against sportswire-dev. Loads `.env.dev` automatically. |
+| `bash scripts/run_dev.sh -d <device-id>` | Target a specific device. |
+| `bash scripts/run_dev.sh --release` | Release mode build against dev backend. |
+
+`.env.dev` lives at the repo root and is gitignored via `.env.*`. It must contain `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `MIXPANEL_TOKEN`.
+
+---
+
 ## Environment Notes
 
 - sportswire-dev: ✅ created, all 6 migrations applied, 3 Edge Functions live (fetch-news, fetch-scores, get-story-detail), 5 cron jobs running
