@@ -75,6 +75,7 @@ Current task branch: task/phase1-data-foundation (PR #1 open → dev)
 | 2026-03-16 | Bug fixes + Phase 1 wrap | — | fetch-standings disabled (BDL tier). fetch-news Gemini parser fixed + redeployed. fetch-scores period field fixed + redeployed. get-story-detail confirmed working. Phase 1 complete pending Gemini ai_analysis backfill tomorrow. |
 | 2026-03-16 | Phase 2 Flutter Feed | task/phase2-flutter-feed | Flutter project created. Feed screen, game ticker, story card, settings sheet, all Mixpanel events, Riverpod providers, shimmer skeletons, go_router. flutter analyze clean. Story screen is stub only (Phase 3). |
 | 2026-03-16 | NCAAB news + badge fix | task/phase2-flutter-feed | Added NCAAB ESPN RSS to fetch-news. Redeployed. Fixed team badge visibility for dark-primary teams (computeLuminance fallback to accent). Updated specs. |
+| 2026-03-16 | Two-layer team_tags extraction | task/phase2-flutter-feed | fetch-news: Layer 1 parses ESPN <category> tags against league-scoped lookups (NBA 30, NFL 32, NCAAB ~35 programs). Gemini fills the gap only when RSS returns zero tags. Gemini still always called for summary/analysis/is_hot. Redeployed. |
 
 ---
 
