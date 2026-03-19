@@ -34,21 +34,23 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 
 ## External Data Sources
 
-### BallDontLie (Scores, Standings, Stats)
+### BallDontLie (Scores, Standings, Stats) — DEPRECATED for Scores
 - Base URL NBA: `https://api.balldontlie.io/v1`
 - Base URL NFL: `https://api.balldontlie.io/nfl/v1`
 - Auth header: `Authorization: Bearer {BALLDONTLIE_API_KEY}`
 - Free tier: 5 req/min. All-Star tier: 60 req/min.
 - Key stored in Supabase Vault as `BALLDONTLIE_API_KEY`
-- All BallDontLie calls go through `_shared/bdl_client.ts` — never call fetch directly
+- **NOTE (2026-03-19):** BallDontLie is no longer called for NBA or NFL scores. Replaced by ESPN hidden API.
+  The `BALLDONTLIE_API_KEY` secret is retained for potential future use (standings, advanced stats).
+  `fetch-scores` Edge Function is deprecated — cron job unscheduled. `_shared/bdl_client.ts` retained.
 
 ### ESPN RSS (News)
-- NBA:   `https://www.espn.com/espn/rss/nba/news`
-- NFL:   `https://www.espn.com/espn/rss/nfl/news`
-- NCAAB: `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
+- NBA:     `https://www.espn.com/espn/rss/nba/news`
+- NFL:     `https://www.espn.com/espn/rss/nfl/news`
+- NCAAB:   `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
+- Yankees: `https://www.espn.com/mlb/rss/news?id=10` — added 2026-03-19; league = 'Yankees', team_tags = ['NYY']
 - No auth required. Official ESPN feeds. Free.
 - Display headlines and summaries. Always link to full article_url. Required by ESPN ToS.
-- NCAAB scores deferred — BallDontLie covers 350+ college teams; UI decision on how to surface them is Phase 5.
 
 ### Google Gemini Flash Lite (AI Summaries)
 - Model: `gemini-2.5-flash-lite-preview-06-17` — 1,000 RPD on free tier
@@ -59,23 +61,48 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - Free tier. Response is JSON extracted via `indexOf("{")` / `lastIndexOf("}")` — do not use regex anchor stripping.
 - **Do not use `gemini-2.0-flash`** — deprecated 2026-03-03, retires September 2026.
 
-### ESPN Scoreboard API (NCAAB Scores — Unofficial)
-- URL: `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard`
-- No auth required. Returns today's NCAAB games by default.
-- **Unofficial endpoint** — no published docs or ToS. Not guaranteed stable. Graceful fallback in place: any fetch/parse error returns `{ ok: true, skipped: true, reason: 'espn-fetch-error' }` so the cron job never alerts.
-- Used by `fetch-ncaab-scores` Edge Function only. Seasonal gate Nov–Apr inside the function.
-- BDL does not include NCAAB on the All-Star tier — ESPN is the only free source.
+### ESPN Scoreboard API (NBA, NFL, MLB, NCAAB — Unofficial)
 
-#### Key response fields:
-- `events[].id` → `external_id` as `'ncaab_' + id`
+All four sports use ESPN's public scoreboard API. No auth required. Unofficial — no published docs or ToS.
+On any fetch/parse error: return `{ ok: true, skipped: true, reason: 'espn-fetch-error' }` — never HTTP 500.
+
+| League | URL | Seasonal gate | external_id prefix | Cron |
+|--------|-----|---------------|-------------------|------|
+| NBA    | `https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard` | Oct–Jun | `nba_` | `* * * * *` |
+| NFL    | `https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard` | Sep–Feb | `nfl_` | `* * * * *` |
+| MLB    | `https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard` | Mar–Nov | `mlb_` | `* * * * *` |
+| NCAAB  | `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard` | Nov–Apr | `ncaab_` | `* * * * *` |
+
+#### ESPN Response Schema (common to all sports):
+- `events[].id` → `external_id` as `'{prefix}' + id`
 - `events[].date` → `game_time` (ISO UTC)
+- `events[].season.type` → 1=preseason/Spring Training, 2=regular, 3=postseason
+- `events[].season.slug` → `"preseason"` | `"regular-season"` | `"postseason"`
 - `events[].status.type.state` → `'pre'` | `'in'` | `'post'`
-- `events[].status.type.completed` → boolean (use with state for reliable final detection)
-- `events[].competitions[0].competitors[]` — use `.homeAway === 'home'/'away'` field, NOT array order
-- `competitions[0].status.period` → 1 or 2 (halves, not quarters)
-- `competitions[0].status.displayClock` → `'6:36'`
-- College basketball uses **2 halves**, not 4 quarters. Period stored as `'6:36 - 1st Half'` / `'6:36 - 2nd Half'`.
+- `events[].status.type.detail` → human readable clock → stored in `clock` column
+- `events[].status.type.completed` → boolean (use with state for final detection)
+- `events[].status.period` → current period/quarter/inning number → stored in `period` column
+- `events[].competitions[0].competitors[]` — always use `.homeAway` field (`'home'`/`'away'`), NOT array order
 - `team.color` → hex without `#` prefix (add `#` when using in UI)
+- `team.logo` → full ESPN CDN URL
+
+#### `details` JSONB column:
+Stores the full competitors array + situation + featuredAthletes + broadcast + seasonType/Slug.
+Schema defined in `web/src/lib/types.ts` as `GameDetails`.
+
+Key sub-fields:
+- `competitors[].linescores[]` — period scores for linescore table
+- `competitors[].statistics[]` — MLB: hits, errors; etc.
+- `competitors[].leaders[]` — top performers (points, passYards, HR, etc.)
+- `competitors[].probables[]` — MLB only: starting pitcher name/headshot/record
+- `situation` — live games: MLB count/bases/batter/pitcher; NFL down & distance
+- `featuredAthletes[]` — MLB final: winning/losing/saving pitcher lines
+- `broadcast` — TV network string e.g. "ESPN", "TNT"
+
+#### NCAAB specifics (unchanged from before):
+- College basketball uses **2 halves**, not 4 quarters
+- `period` stored as display string `'6:36 - 1st Half'` / `'6:36 - 2nd Half'` (legacy — no `clock` column)
+- `details` column not yet populated by `fetch-ncaab-scores` (NCAAB function predates this schema)
 
 ---
 
@@ -152,17 +179,20 @@ CREATE INDEX idx_stories_published ON stories(published_at DESC);
 ```sql
 CREATE TABLE games (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  external_id     TEXT UNIQUE,           -- BallDontLie game ID (prefixed 'nfl_' for NFL)
-  league          TEXT NOT NULL,         -- 'NBA' | 'NFL'
-  home_team       TEXT NOT NULL,         -- abbreviation e.g. 'LAL'
-  away_team       TEXT NOT NULL,
+  external_id     TEXT UNIQUE,           -- ESPN game ID prefixed: 'nba_' | 'nfl_' | 'mlb_' | 'ncaab_'
+  league          TEXT NOT NULL,         -- 'NBA' | 'NFL' | 'MLB' | 'NCAAB'
+  home_team       TEXT NOT NULL,         -- full display name from ESPN e.g. 'Los Angeles Lakers'
+  away_team       TEXT NOT NULL,         --   (NCAAB uses abbreviation — predates ESPN migration)
   home_score      INT DEFAULT 0,
   away_score      INT DEFAULT 0,
   status          TEXT DEFAULT 'scheduled', -- 'scheduled' | 'in_progress' | 'final'
   game_time       TIMESTAMPTZ,
-  period          TEXT,                  -- 'Q2 4:32', 'Halftime', 'Final', 'Week 18'
+  period          TEXT,                  -- quarter/inning number (ESPN), or display string (NCAAB legacy)
+  clock           TEXT,                  -- human-readable status e.g. "4th Qtr 2:14", "Bot 4th" (ESPN only)
+  broadcast       TEXT,                  -- TV network e.g. "ESPN", "TNT" (ESPN only)
   home_win_prob   FLOAT,                 -- 0.0–1.0
-  box_score       JSONB,
+  box_score       JSONB,                 -- legacy BDL field (unused for ESPN sports)
+  details         JSONB,                 -- full competitors: logos, linescores, leaders, situation, etc.
   fetched_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -369,19 +399,55 @@ The response now includes `rssTagHits` in addition to `inserted`/`skipped` so yo
 
 ---
 
-### `fetch-scores`
+### `fetch-scores` ⚠️ DEPRECATED
 
-**Triggered by:** Supabase Cron every 5 minutes  
-**Purpose:** Fetch today + tomorrow games from BallDontLie, upsert to `games` table  
-**BDL requests per run:** 2 (NBA + NFL) — only when `shouldPollScores()` returns true
+**Status:** Deprecated 2026-03-19. Cron job unscheduled. File retained, not deleted.
+**Replaced by:** `fetch-nba-scores` and `fetch-nfl-scores` (ESPN API).
+**BALLDONTLIE_API_KEY:** Secret retained — not deleted. Available for future use.
+
+---
+
+### `fetch-nba-scores`
+
+**Triggered by:** Supabase Cron every 1 minute
+**Purpose:** Fetch today's NBA games from ESPN scoreboard API, upsert to `games` table
+**BDL requests:** 0 — ESPN only
+**Seasonal gate:** October–June (months 10–12, 1–6)
 
 Logic:
-1. Call `shouldPollScores()` — if false, return `{ ok: true, skipped: true }`
-2. Fetch NBA: `GET /nba/v1/games?per_page=25&dates[]={today}&dates[]={tomorrow}`
-3. Fetch NFL: `GET /nfl/v1/games?per_page=25&dates[]={today}&dates[]={tomorrow}`
-4. Normalize status: 'Final' → 'final', 'Q2 4:32' → 'in_progress', else → 'scheduled'
-5. Upsert each game on `external_id` conflict
-6. On 429: bdl_client handles retry. If retry fails, return `{ ok: false, error }` with HTTP 200 (prevents Supabase Cron alert spam)
+1. Check month — if offseason, return `{ ok: true, skipped: true, reason: 'nba-offseason' }`
+2. GET ESPN NBA scoreboard URL
+3. On non-200 or fetch throw: return `{ ok: true, skipped: true, reason: 'espn-fetch-error' }`
+4. For each event: find home/away by `.homeAway` field
+5. Map state (`pre`/`in`/`post`) to `scheduled`/`in_progress`/`final`
+6. Store `status.period` in `period`, `status.type.detail` in `clock`
+7. Build `details` JSONB: competitors with logos/linescores/leaders, situation, broadcast, seasonType
+8. Upsert on `external_id` conflict (`'nba_' + event.id`)
+
+---
+
+### `fetch-nfl-scores`
+
+**Triggered by:** Supabase Cron every 1 minute
+**Purpose:** Fetch today's NFL games from ESPN scoreboard API, upsert to `games` table
+**BDL requests:** 0 — ESPN only
+**Seasonal gate:** September–February (months 9–12, 1–2)
+
+Logic: identical to `fetch-nba-scores`, external_id prefix `'nfl_'`, league `'NFL'`.
+
+---
+
+### `fetch-mlb-scores`
+
+**Triggered by:** Supabase Cron every 1 minute
+**Purpose:** Fetch today's MLB games from ESPN scoreboard API, upsert to `games` table
+**BDL requests:** 0 — ESPN only
+**Seasonal gate:** March–November (months 3–11)
+
+Logic: identical pattern. MLB extras in `details`:
+- `competitors[].probables[]` — starting pitcher names, headshots, records
+- `situation` — balls, strikes, outs, onFirst/onSecond/onThird, batter, pitcher
+- `featuredAthletes[]` — winningPitcher, losingPitcher, savePitcher on final games
 
 ---
 
@@ -440,37 +506,35 @@ Logic:
 ## Cron Schedule
 
 ```sql
--- Scores: every 5 minutes
--- bdl_client gates internally — skips outside game hours
-SELECT cron.schedule('fetch-scores', '*/5 * * * *', ...);
+-- fetch-scores (BDL NBA+NFL): UNSCHEDULED 2026-03-19 — replaced by ESPN functions
+SELECT cron.unschedule('fetch-scores');
+
+-- NBA scores: every 1 minute (seasonal gate Oct–Jun inside function)
+SELECT cron.schedule('fetch-nba-scores', '* * * * *', ...);
+
+-- NFL scores: every 1 minute (seasonal gate Sep–Feb inside function)
+SELECT cron.schedule('fetch-nfl-scores', '* * * * *', ...);
+
+-- MLB scores: every 1 minute (seasonal gate Mar–Nov inside function)
+SELECT cron.schedule('fetch-mlb-scores', '* * * * *', ...);
+
+-- NCAAB scores: every 1 minute (seasonal gate Nov–Apr inside function)
+SELECT cron.schedule('fetch-ncaab-scores', '*/1 * * * *', ...);
 
 -- News: at :15 and :45 past every hour
--- Staggered to avoid firing same minute as scores at :00/:30
 SELECT cron.schedule('fetch-news', '15,45 * * * *', ...);
 
 -- Standings: at :30 past every hour
--- Fires at :30 — never same minute as fetch-scores
 SELECT cron.schedule('fetch-standings', '30 * * * *', ...);
 
 -- Cleanup: daily at 4 AM UTC
--- Delete stories > 7 days, final games > 3 days, story_views > 30 days
 SELECT cron.schedule('cleanup', '0 4 * * *', ...);
 
 -- Hot recalculation: at :00 past every hour
--- Mark hot if 10+ views in last 3 hours. Unmark if dropped below threshold.
 SELECT cron.schedule('recalc-hot', '0 * * * *', ...);
-
--- NCAAB scores: every 1 minute (seasonal gate Nov–Apr inside function)
--- ESPN public API — zero BDL requests. pg_cron minimum granularity is 1 min.
-SELECT cron.schedule('fetch-ncaab-scores', '*/1 * * * *', ...);
 ```
 
-**Request budget analysis (free tier: 5 req/min):**
-- fetch-scores: 2 req when active (NBA only Mar–Aug, NBA+NFL Sep–Feb), 0 when off-hours → avg ~0.4 req/min
-- fetch-ncaab-scores: 0 BDL requests (ESPN only)
-- fetch-standings: 2 req/hour → ~0.03 req/min avg
-- fetch-news: 0 BDL requests
-- Peak: ~2.5 req/min — well within 5/min free tier
+**Request budget:** All ESPN scoreboard calls are zero-cost (no API key, no rate limit). BDL key retained but fetch-scores cron is unscheduled. BDL requests: only fetch-standings (2 req/hour) when re-enabled.
 
 ---
 
@@ -486,17 +550,25 @@ supabase/
     20260315000005_seed_teams.sql           -- NBA and NFL team data
     20260315000006_cron_schedule.sql        -- pg_cron job definitions
     20260319000007_ncaab_cron.sql           -- adds fetch-ncaab-scores cron job
+    20260319000008_ncaab_cron_1min.sql      -- updates NCAAB cron to 1-minute interval
+    20260319000009_espn_scores_columns.sql  -- adds clock, broadcast, details columns to games
   functions/
     _shared/
       bdl_client.ts
     fetch-news/
-      index.ts
+      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/Yankees) → stories table
     fetch-scores/
-      index.ts
+      index.ts                             -- ⚠️ DEPRECATED 2026-03-19 — BDL NBA+NFL (cron unscheduled)
+    fetch-nba-scores/
+      index.ts                             -- ESPN NBA scoreboard → games table (Oct–Jun)
+    fetch-nfl-scores/
+      index.ts                             -- ESPN NFL scoreboard → games table (Sep–Feb)
+    fetch-mlb-scores/
+      index.ts                             -- ESPN MLB scoreboard → games table (Mar–Nov)
     fetch-standings/
       index.ts
     fetch-ncaab-scores/
-      index.ts                             -- ESPN NCAAB scoreboard → games table
+      index.ts                             -- ESPN NCAAB scoreboard → games table (Nov–Apr)
     get-story-detail/
       index.ts
   tests/

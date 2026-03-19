@@ -21,9 +21,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ─── ESPN RSS feed URLs ───────────────────────────────────────────────────────
 const ESPN_RSS: Record<string, string> = {
-  NBA:   "https://www.espn.com/espn/rss/nba/news",
-  NFL:   "https://www.espn.com/espn/rss/nfl/news",
-  NCAAB: "https://www.espn.com/espn/rss/ncb/news",
+  NBA:     "https://www.espn.com/espn/rss/nba/news",
+  NFL:     "https://www.espn.com/espn/rss/nfl/news",
+  NCAAB:   "https://www.espn.com/espn/rss/ncb/news",
+  // Yankees-specific MLB feed — league = 'Yankees', team_tags = ['NYY', 'Yankees']
+  Yankees: "https://www.espn.com/mlb/rss/news?id=10",
 };
 
 // ─── Gemini Flash endpoint ────────────────────────────────────────────────────
@@ -150,10 +152,16 @@ const NCAAB_TEAM_LOOKUP: Record<string, string[]> = {
   WAKE:   ["wake forest demon deacons", "wake forest"],
 };
 
+// Yankees: only one team — every article from this feed tags NYY
+const YANKEES_TEAM_LOOKUP: Record<string, string[]> = {
+  NYY: ["new york yankees", "yankees", "new york"],
+};
+
 const LEAGUE_LOOKUP: Record<string, Record<string, string[]>> = {
-  NBA:   NBA_TEAM_LOOKUP,
-  NFL:   NFL_TEAM_LOOKUP,
-  NCAAB: NCAAB_TEAM_LOOKUP,
+  NBA:     NBA_TEAM_LOOKUP,
+  NFL:     NFL_TEAM_LOOKUP,
+  NCAAB:   NCAAB_TEAM_LOOKUP,
+  Yankees: YANKEES_TEAM_LOOKUP,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

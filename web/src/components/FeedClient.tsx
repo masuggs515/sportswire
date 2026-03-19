@@ -7,7 +7,7 @@ import GameTicker from './GameTicker'
 import { getFollowedTeams } from './SettingsSheet'
 import { createClient } from '@/lib/supabase/client'
 
-const LEAGUES = ['All', 'NBA', 'NFL', 'NCAAB'] as const
+const LEAGUES = ['All', 'NBA', 'NFL', 'NCAAB', 'Yankees'] as const
 type LeagueTab = typeof LEAGUES[number]
 
 interface FeedClientProps {
