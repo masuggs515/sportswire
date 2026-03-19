@@ -14,18 +14,19 @@ export default async function FeedPage() {
     .order('published_at', { ascending: false })
     .limit(50)
 
-  // Fetch today's games for ticker
+  // Fetch games for ticker: today + tomorrow (catches live, today's finals, upcoming)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  const twoDaysOut = new Date(today)
+  twoDaysOut.setDate(twoDaysOut.getDate() + 2)
 
   const { data: games } = await supabase
     .from('games')
     .select('*')
     .gte('game_time', today.toISOString())
-    .lt('game_time', tomorrow.toISOString())
+    .lt('game_time', twoDaysOut.toISOString())
     .order('game_time', { ascending: true })
+    .limit(20)
 
   return (
     <FeedClient
