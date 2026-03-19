@@ -1,5 +1,5 @@
 # Project State
-Last updated: 2026-03-19 (session 11)
+Last updated: 2026-03-19 (session 12)
 Current phase: 2 — Next.js Web Feed (in progress — PR open)
 Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 
@@ -66,7 +66,7 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 - [x] Fix fetch-scores period field — scheduled games now store null instead of ISO datetime string; in-progress NBA uses BDL display text; in-progress NFL uses Q{quarter}; final games store "Final" — completed 2026-03-16
 - [x] Confirm get-story-detail deployed and responding — invoked with real story ID, returned correct payload — completed 2026-03-16
 - [x] Apply migration 006 (cron schedule) to sportswire-dev — applied manually before agent sessions began; all 5 cron jobs live — completed pre-session
-- [x] Create Mixpanel account and get SportsWire project token — account created, token saved in password manager — completed pre-session
+- [x] Create Mixpanel account and get Mint Street Sports project token — account created, token saved in password manager — completed pre-session
 
 ---
 
@@ -84,6 +84,7 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 | 2026-03-16 | Two-layer team_tags extraction | task/phase2-flutter-feed | fetch-news: Layer 1 parses ESPN <category> tags against league-scoped lookups (NBA 30, NFL 32, NCAAB ~35 programs). Gemini fills the gap only when RSS returns zero tags. Gemini still always called for summary/analysis/is_hot. Redeployed. |
 | 2026-03-18 | Platform pivot: Flutter → Next.js | task/phase2-nextjs-web | Deleted sportswire/ Flutter project. Created Next.js 15 web app (TypeScript, Tailwind, App Router). Feed page, story detail page, StoryCard, GameTicker, TeamBadge, SettingsSheet, NavBar. Supabase SSR client. localStorage prefs. vercel.json. ESLint + TypeScript clean. Updated all specs. |
 | 2026-03-19 | Add scores page | task/phase2-nextjs-web | New: /scores page with LIVE→TODAY→UPCOMING→RECENT sections, league tabs, team colors, realtime, win probability. Updated GameTicker to prioritise live→upcoming. NavBar now has Feed + Scores nav links with active state. ESLint + TypeScript clean. |
+| 2026-03-19 | App branding rename | task/phase2-nextjs-web | Renamed app from SportsWire to Mint Street Sports in NavBar, layout.tsx metadata, web/README.md, and spec files. Internal repo/Supabase names unchanged. |
 
 ---
 

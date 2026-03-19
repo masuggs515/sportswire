@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SportsWire",
+  title: "Mint Street Sports",
   description: "Personalised sports news — NBA, NFL, NCAAB",
 };
 
