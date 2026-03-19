@@ -195,9 +195,6 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
     ? games
     : games.filter(g => g.league === activeTab)
 
-  // NCAAB has no scores yet
-  const isNcaab = activeTab === 'NCAAB'
-
   // Partition into sections
   const live = tabGames.filter(g => g.status === 'in_progress')
 
@@ -246,14 +243,16 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
       </div>
 
       <div className="py-4 space-y-6">
-        {isNcaab ? (
+        {!hasAnyGames ? (
           <div className="px-4 py-12 text-center text-gray-600">
-            <p className="text-sm">NCAAB scores coming soon</p>
-            <p className="text-xs mt-1">Check the feed for NCAAB news</p>
-          </div>
-        ) : !hasAnyGames ? (
-          <div className="px-4 py-12 text-center text-gray-600">
-            <p className="text-sm">No games in this window</p>
+            {activeTab === 'NFL' ? (
+              <>
+                <p className="text-sm">NFL season returns in September</p>
+                <p className="text-xs mt-1">Check back then for live scores and schedules</p>
+              </>
+            ) : (
+              <p className="text-sm">No games in this window</p>
+            )}
           </div>
         ) : (
           <>

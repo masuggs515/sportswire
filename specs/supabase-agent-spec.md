@@ -59,6 +59,26 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - Free tier. Response is JSON extracted via `indexOf("{")` / `lastIndexOf("}")` — do not use regex anchor stripping.
 - **Do not use `gemini-2.0-flash`** — deprecated 2026-03-03, retires September 2026.
 
+### ESPN Scoreboard API (NCAAB Scores — Unofficial)
+- URL: `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard`
+- No auth required. Returns today's NCAAB games by default.
+- **Unofficial endpoint** — no published docs or ToS. Not guaranteed stable. Graceful fallback in place: any fetch/parse error returns `{ ok: true, skipped: true, reason: 'espn-fetch-error' }` so the cron job never alerts.
+- Used by `fetch-ncaab-scores` Edge Function only. Seasonal gate Nov–Apr inside the function.
+- BDL does not include NCAAB on the All-Star tier — ESPN is the only free source.
+
+#### Key response fields:
+- `events[].id` → `external_id` as `'ncaab_' + id`
+- `events[].date` → `game_time` (ISO UTC)
+- `events[].status.type.state` → `'pre'` | `'in'` | `'post'`
+- `events[].status.type.completed` → boolean (use with state for reliable final detection)
+- `events[].competitions[0].competitors[]` — use `.homeAway === 'home'/'away'` field, NOT array order
+- `competitions[0].status.period` → 1 or 2 (halves, not quarters)
+- `competitions[0].status.displayClock` → `'6:36'`
+- College basketball uses **2 halves**, not 4 quarters. Period stored as `'6:36 - 1st Half'` / `'6:36 - 2nd Half'`.
+- `team.color` → hex without `#` prefix (add `#` when using in UI)
+
+---
+
 ### TheSportsDB (Team Metadata)
 - Base URL: `https://www.thesportsdb.com/api/v1/json/1`
 - Free test key = `1` in URL path
@@ -379,6 +399,24 @@ Logic:
 
 ---
 
+### `fetch-ncaab-scores`
+
+**Triggered by:** Supabase Cron every 5 minutes
+**Purpose:** Fetch today's NCAAB games from ESPN public scoreboard API, upsert to `games` table
+**BDL requests:** 0 — ESPN only
+**Seasonal gate:** Nov–Apr (inside function) — returns `{ ok: true, skipped: true, reason: 'ncaab-offseason' }` outside window
+
+Logic:
+1. Check month: if not Nov–Apr, return offseason skip
+2. GET `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard`
+3. On non-200 or fetch throw: return `{ ok: true, skipped: true, reason: 'espn-fetch-error' }`
+4. For each `event`: find home/away competitor by `.homeAway` field
+5. Map state (`pre`/`in`/`post`) to `scheduled`/`in_progress`/`final`
+6. Build period string: `'6:36 - 1st Half'` for half=1, `'6:36 - 2nd Half'` for half=2, `'Final'` when done
+7. Upsert on `external_id` conflict (`'ncaab_' + event.id`)
+
+---
+
 ### `get-story-detail`
 
 **Triggered by:** Flutter app when user taps a story card  
@@ -421,10 +459,15 @@ SELECT cron.schedule('cleanup', '0 4 * * *', ...);
 -- Hot recalculation: at :00 past every hour
 -- Mark hot if 10+ views in last 3 hours. Unmark if dropped below threshold.
 SELECT cron.schedule('recalc-hot', '0 * * * *', ...);
+
+-- NCAAB scores: every 5 minutes (seasonal gate Nov–Apr inside function)
+-- ESPN public API — zero BDL requests
+SELECT cron.schedule('fetch-ncaab-scores', '*/5 * * * *', ...);
 ```
 
 **Request budget analysis (free tier: 5 req/min):**
-- fetch-scores: 2 req when active, 0 when off-hours → avg ~0.4 req/min
+- fetch-scores: 2 req when active (NBA only Mar–Aug, NBA+NFL Sep–Feb), 0 when off-hours → avg ~0.4 req/min
+- fetch-ncaab-scores: 0 BDL requests (ESPN only)
 - fetch-standings: 2 req/hour → ~0.03 req/min avg
 - fetch-news: 0 BDL requests
 - Peak: ~2.5 req/min — well within 5/min free tier
@@ -442,6 +485,7 @@ supabase/
     20260315000004_stored_procedures.sql    -- increment_story_views
     20260315000005_seed_teams.sql           -- NBA and NFL team data
     20260315000006_cron_schedule.sql        -- pg_cron job definitions
+    20260319000007_ncaab_cron.sql           -- adds fetch-ncaab-scores cron job
   functions/
     _shared/
       bdl_client.ts
@@ -451,6 +495,8 @@ supabase/
       index.ts
     fetch-standings/
       index.ts
+    fetch-ncaab-scores/
+      index.ts                             -- ESPN NCAAB scoreboard → games table
     get-story-detail/
       index.ts
   tests/
