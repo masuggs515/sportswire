@@ -156,7 +156,8 @@ stories.sort((a, b) => {
 ```
 
 ### League tabs
-Four tabs: All / NBA / NFL / NCAAB. Filters `stories` array by `league` field client-side.
+Five tabs: All / NBA / NFL / NCAAB / Yankees. Filters `stories` array by `league` field client-side.
+Yankees tab shows stories where `league = 'Yankees'` (ingested from ESPN MLB Yankees RSS feed).
 
 ### Game ticker
 Horizontal scroll of today's games. Supabase Realtime subscribed to `games` table changes for live score updates without polling.
@@ -279,15 +280,33 @@ Fetches games from yesterday through next 3 days. Also merges any in_progress ga
 4. **Yesterday** — `status = 'final'` with game_time = yesterday
 
 ### League tabs
-All / NBA / NFL / NCAAB — filters client-side. NCAAB shows "coming soon" empty state.
+All / NBA / NFL / MLB / NCAAB — filters client-side.
+Offseason empty state messages per league (NFL: September, NBA: October, MLB: March).
 
 ### Game card layout
-- League badge + status (LIVE·period / FINAL / tip-time in local timezone)
-- Away row: color dot, abbr, full name (sm+), score (or —)
-- Home row: color dot, abbr, full name (sm+), score (or —)
-- Winning team bold when final
-- Win probability row for scheduled games (when available)
-- Live games have green border accent
+- League badge + status (LIVE·clock / FINAL / tip-time in local timezone)
+- Broadcast network badge (if available from `details.broadcast`)
+- MLB: Spring Training / Playoffs season badge (from `details.seasonType`)
+- Team display: ESPN logo image (~40px, rounded-sm) + abbreviation underneath, stacked vertically
+  - Logo loaded from `details.competitors[n].team.logo` (ESPN CDN URL)
+  - If logo missing or load fails: falls back to abbreviation in team-colored box
+  - Team color from `details.competitors[n].team.color` (hex without #, prefixed with #)
+- Score: large tabular numbers, winner bolded white when final
+- Linescore table (live and final games, when linescores present in details):
+  - MLB: innings 1–9 (or more) | R H E columns; dash for unplayed innings
+  - NBA/NFL: Q1 Q2 Q3 Q4 (OT if applicable) | T columns
+  - NCAAB: 1H 2H (OT if applicable) | T columns
+  - Small monospace font, border between period columns and total
+- Live situation (live games only):
+  - MLB: count "B-S Count · N Out(s)" + diamond base diagram (filled = runner on base) + batter/pitcher names
+  - NFL: down & distance text e.g. "2nd & 7 · Yd 35"
+- Leaders / top performers (live and final games):
+  - MLB live: HR or RBI leader per team with headshot
+  - MLB final: winning/losing/saving pitcher from featuredAthletes (name + W-L + ERA)
+  - NBA: points leader per team
+  - NFL: passing yards leader (or rushing if no passer)
+  - NCAAB: points leader per team
+  - Format: [24px headshot circle] "Player Name — stat line"
 
 ### Realtime
 Supabase channel subscribed to `games` table changes — score updates without page refresh.
@@ -313,8 +332,10 @@ Prioritises: LIVE games → upcoming scheduled → recent finals. Shows a "Live 
 - [x] Settings sheet: team picker saves to localStorage
 - [x] Realtime game score updates via Supabase channel (feed + scores)
 - [x] Scores page (/scores): LIVE → TODAY → UPCOMING → RECENT sections
-- [x] Scores page: league tabs All / NBA / NFL / NCAAB
+- [x] Scores page: league tabs All / NBA / NFL / MLB / NCAAB
 - [x] Scores page: team colors + win probability
+- [x] Scores page: ESPN team logos + linescores + leaders + live situation (MLB/NFL)
+- [x] Feed page: Yankees news tab
 - [x] NavBar: Feed + Scores nav links with active state
 - [x] ESLint clean
 - [x] TypeScript clean

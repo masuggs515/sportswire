@@ -15,6 +15,74 @@ export interface Story {
   view_count: number
 }
 
+export interface GameCompetitorTeam {
+  displayName: string
+  abbreviation: string
+  color: string
+  logo: string
+}
+
+export interface GameLinescore {
+  period: number
+  displayValue: string
+}
+
+export interface GameLeaderEntry {
+  athlete: { fullName: string; headshot: string | null }
+  displayValue: string
+}
+
+export interface GameLeader {
+  name: string
+  leaders: GameLeaderEntry[]
+}
+
+export interface GameProbable {
+  name: string
+  athlete: { fullName: string; headshot: string | null }
+  statistics: Array<{ name: string; displayValue: string }>
+}
+
+export interface GameCompetitor {
+  homeAway: 'home' | 'away'
+  team: GameCompetitorTeam
+  score: string
+  linescores: GameLinescore[]
+  statistics: Array<{ name: string; displayValue: string }>
+  leaders: GameLeader[]
+  records: Array<{ summary: string }>
+  probables?: GameProbable[]
+}
+
+export interface GameSituation {
+  balls?: number
+  strikes?: number
+  outs?: number
+  onFirst?: boolean
+  onSecond?: boolean
+  onThird?: boolean
+  batter?: { athlete: { fullName: string }; summary: string }
+  pitcher?: { athlete: { fullName: string }; summary: string }
+  possession?: string
+  shortDownDistanceText?: string
+  yardLine?: number
+}
+
+export interface GameFeaturedAthlete {
+  name: string
+  athlete: { fullName: string; headshot: string | null }
+  statistics: Array<{ name: string; displayValue: string }>
+}
+
+export interface GameDetails {
+  competitors: GameCompetitor[]
+  situation: GameSituation | null
+  featuredAthletes: GameFeaturedAthlete[] | null
+  broadcast: string | null
+  seasonType: number | null
+  seasonSlug: string | null
+}
+
 export interface Game {
   id: string
   external_id: string
@@ -26,6 +94,9 @@ export interface Game {
   status: 'scheduled' | 'in_progress' | 'final'
   game_time: string
   period: string | null
+  clock: string | null
+  broadcast: string | null
+  details: GameDetails | null
   home_win_prob: number | null
   box_score: Record<string, unknown> | null
   fetched_at: string

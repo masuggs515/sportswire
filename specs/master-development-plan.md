@@ -20,7 +20,8 @@ Mint Street Sports is a personal sports news web app for NBA, NFL, and NCAAB, bu
 | Web app | Next.js 15 (App Router, TypeScript, Tailwind CSS) |
 | Hosting | Vercel (rootDirectory: web/) |
 | Backend | Supabase (Postgres + Edge Functions + Cron) |
-| Scores / stats / standings | BallDontLie API (All-Star tier — $9.99/sport/mo) |
+| Scores (NBA/NFL/MLB/NCAAB) | ESPN hidden scoreboard API (unofficial, no auth, free) |
+| Standings / stats | BallDontLie API (currently disabled — All-Star tier needed) |
 | News | ESPN RSS (official feeds — free) |
 | AI summaries | Google Gemini Flash (free tier via Google AI Studio) |
 | Team metadata | TheSportsDB (free tier) |
@@ -74,6 +75,12 @@ Definition of Done:
 - [x] NCAAB live/today/upcoming/final sections on /scores page
 - [x] NFL seasonal gate in fetch-scores (Sep–Feb only)
 - [x] NFL offseason message on /scores page
+- [x] ESPN-based NBA scores (fetch-nba-scores) — replaces BallDontLie
+- [x] ESPN-based NFL scores (fetch-nfl-scores) — replaces BallDontLie
+- [x] MLB scores via ESPN API (fetch-mlb-scores, Mar–Nov gate)
+- [x] MLB tab on /scores page
+- [x] Yankees RSS news feed (league='Yankees') + Yankees tab on feed page
+- [x] Score cards: ESPN team logos, linescores, leaders, MLB situation, MLB pitching lines
 - [ ] vercel.json configured — deploy to Vercel (TODO MAS)
 - [ ] Mixpanel events (TODO MAS — add mixpanel-browser)
 
@@ -144,13 +151,19 @@ mint-street-news/
       20260315000006_cron_schedule.sql
     functions/
       _shared/
-        bdl_client.ts               ← rate-aware BallDontLie HTTP client
+        bdl_client.ts               ← rate-aware BallDontLie HTTP client (retained, BDL key unused for scores)
       fetch-news/
-        index.ts                    ← ESPN RSS → Gemini → stories table
+        index.ts                    ← ESPN RSS (NBA/NFL/NCAAB/Yankees) → Gemini → stories table
       fetch-scores/
-        index.ts                    ← BallDontLie → games table
+        index.ts                    ← ⚠️ DEPRECATED — BallDontLie NBA+NFL (cron unscheduled 2026-03-19)
+      fetch-nba-scores/
+        index.ts                    ← ESPN NBA scoreboard → games table (Oct–Jun)
+      fetch-nfl-scores/
+        index.ts                    ← ESPN NFL scoreboard → games table (Sep–Feb)
+      fetch-mlb-scores/
+        index.ts                    ← ESPN MLB scoreboard → games table (Mar–Nov)
       fetch-standings/
-        index.ts                    ← BallDontLie → standings table
+        index.ts                    ← BallDontLie → standings table (disabled pending BDL upgrade)
       fetch-ncaab-scores/
         index.ts                    ← ESPN NCAAB scoreboard → games table (Nov–Apr)
       get-story-detail/

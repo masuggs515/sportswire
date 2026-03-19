@@ -1,9 +1,20 @@
 /**
  * fetch-scores/index.ts
  *
- * Triggered by Supabase Cron every 5 minutes.
+ * ⚠️  DEPRECATED — 2026-03-19
  *
- * Logic:
+ * NBA and NFL scores are now fetched via ESPN hidden API in:
+ *   - supabase/functions/fetch-nba-scores/index.ts
+ *   - supabase/functions/fetch-nfl-scores/index.ts
+ *
+ * This function remains in place (not deleted) so the cron job
+ * can be unscheduled gracefully. The BALLDONTLIE_API_KEY secret
+ * is retained in Supabase secrets for potential future use.
+ *
+ * The cron job 'fetch-scores' should be unscheduled via:
+ *   SELECT cron.unschedule('fetch-scores');
+ *
+ * Original logic:
  *  1. Call shouldPollScores() — skip if outside game hours or full offseason
  *  2. Fetch today + tomorrow games from BallDontLie for NBA and NFL
  *  3. Normalize status string to 'scheduled' | 'in_progress' | 'final'
