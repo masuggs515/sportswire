@@ -57,18 +57,21 @@ web/
       page.tsx                   # Feed page — server component, fetches stories + games
       layout.tsx                 # Root layout with NavBar
       globals.css                # Tailwind directives + global styles
+      scores/
+        page.tsx                 # Scores page — yesterday through next 3 days, revalidate 30s
       story/
         [id]/
           page.tsx               # Story detail page — calls get-story-detail edge fn
 
     components/
-      NavBar.tsx                 # Sticky header with settings button
+      NavBar.tsx                 # Sticky header with Feed/Scores nav + settings button
       FeedClient.tsx             # Feed client: tabs, realtime, sorting
       StoryCard.tsx              # Tweet-like story card
-      GameTicker.tsx             # Horizontal scroll of today's games
+      GameTicker.tsx             # Horizontal scroll: live games → upcoming → recent
       StoryDetailClient.tsx      # Full story view (client)
       TeamBadge.tsx              # Coloured team abbreviation chip
       SettingsSheet.tsx          # Slide-out settings panel with team picker
+      ScoresClient.tsx           # Scores page client: sections, league tabs, realtime
 
     lib/
       types.ts                   # TypeScript interfaces: Story, Game, Standing, Team, StoryDetail
@@ -262,18 +265,57 @@ Fill in `web/.env.local` before running.
 
 ---
 
+## Scores Page (`/scores`)
+
+Server component (`revalidate = 30`). Reads directly from the `games` table — no Edge Function needed.
+
+### Data window
+Fetches games from yesterday through next 3 days. Also merges any in_progress games outside that window (edge case).
+
+### Sections (in order, hidden if empty for active tab)
+1. **Live** — `status = 'in_progress'` — green animated dot, live period shown
+2. **Today** — `status = 'final' | 'scheduled'` with game_time = today
+3. **Upcoming** — `status = 'scheduled'` grouped by date label (e.g. "Thu, Mar 20")
+4. **Yesterday** — `status = 'final'` with game_time = yesterday
+
+### League tabs
+All / NBA / NFL / NCAAB — filters client-side. NCAAB shows "coming soon" empty state.
+
+### Game card layout
+- League badge + status (LIVE·period / FINAL / tip-time in local timezone)
+- Away row: color dot, abbr, full name (sm+), score (or —)
+- Home row: color dot, abbr, full name (sm+), score (or —)
+- Winning team bold when final
+- Win probability row for scheduled games (when available)
+- Live games have green border accent
+
+### Realtime
+Supabase channel subscribed to `games` table changes — score updates without page refresh.
+
+---
+
+## Game Ticker (updated)
+
+Prioritises: LIVE games → upcoming scheduled → recent finals. Shows a "Live Now" / "Upcoming" label. Feed page query window expanded to today + 2 days to catch upcoming games for the ticker.
+
+---
+
 ## Deliverable Checklist
 
 - [x] Feed page showing stories from Supabase
 - [x] League tabs (All / NBA / NFL / NCAAB) filtering correctly
-- [x] Game ticker showing today's scores
+- [x] Game ticker: prioritises live → upcoming → recent
 - [x] Story card: team color accent, badges, headline, ai_summary
 - [x] Story detail page assembled from get-story-detail response
 - [x] AI analysis displayed (no loading state — always cached)
 - [x] "Read Full Story" opens ESPN URL in new tab
 - [x] Share button copies deep link URL to clipboard
 - [x] Settings sheet: team picker saves to localStorage
-- [x] Realtime game score updates via Supabase channel
+- [x] Realtime game score updates via Supabase channel (feed + scores)
+- [x] Scores page (/scores): LIVE → TODAY → UPCOMING → RECENT sections
+- [x] Scores page: league tabs All / NBA / NFL / NCAAB
+- [x] Scores page: team colors + win probability
+- [x] NavBar: Feed + Scores nav links with active state
 - [x] ESLint clean
 - [x] TypeScript clean
 - [ ] Mixpanel events (TODO MAS — see above)

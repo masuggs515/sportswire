@@ -13,15 +13,23 @@ function GameCard({ game }: { game: Game }) {
   const isFinal = game.status === 'final'
   const isLive = game.status === 'in_progress'
 
-  const gameDate = new Date(game.game_time)
-  const timeStr = gameDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  const timeStr = new Date(game.game_time).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
 
   return (
-    <div className="flex-shrink-0 bg-gray-900 border border-gray-800 rounded-xl p-3 w-40">
+    <div className={`flex-shrink-0 rounded-xl p-3 w-40 border ${
+      isLive
+        ? 'bg-gray-900 border-green-500/40'
+        : 'bg-gray-900 border-gray-800'
+    }`}>
       {/* Status */}
       <div className="text-center mb-2">
         {isLive ? (
-          <span className="text-xs text-green-400 font-semibold">
+          <span className="flex items-center justify-center gap-1 text-xs text-green-400 font-semibold">
+            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
             {game.period ?? 'LIVE'}
           </span>
         ) : isFinal ? (
@@ -64,19 +72,40 @@ function GameCard({ game }: { game: Game }) {
 }
 
 export default function GameTicker({ games }: GameTickerProps) {
-  if (games.length === 0) {
+  const live = games.filter(g => g.status === 'in_progress')
+  const upcoming = games.filter(g => g.status === 'scheduled')
+  const finished = games.filter(g => g.status === 'final')
+
+  // Priority: show live games; if none show upcoming; if none show recent finals
+  const display = live.length > 0 ? live : upcoming.length > 0 ? upcoming : finished
+
+  if (display.length === 0) {
     return (
-      <div className="text-center text-gray-600 text-sm py-4">
+      <div className="text-center text-gray-600 text-sm py-3">
         No games today
       </div>
     )
   }
 
+  const label = live.length > 0
+    ? 'Live Now'
+    : upcoming.length > 0
+    ? 'Upcoming'
+    : 'Recent'
+
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-4">
-      {games.map(game => (
-        <GameCard key={game.id} game={game} />
-      ))}
+    <div>
+      <div className="flex items-center gap-2 px-4 mb-2">
+        {live.length > 0 && (
+          <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+        )}
+        <span className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-4">
+        {display.map(game => (
+          <GameCard key={game.id} game={game} />
+        ))}
+      </div>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-18 (session 10)
+Last updated: 2026-03-19 (session 11)
 Current phase: 2 — Next.js Web Feed (in progress — PR open)
-Current task branch: task/phase2-nextjs-web (PR open → dev)
+Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 
 **Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
@@ -34,7 +34,7 @@ Current task branch: task/phase2-nextjs-web (PR open → dev)
 
 - PR #1: `task/phase1-data-foundation` → `dev` — https://github.com/masuggs515/sportswire/pull/1
 - PR #2: `task/phase2-flutter-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/2 (superseded by pivot — close without merging)
-- PR #3: `task/phase2-nextjs-web` → `dev` — (open after this session)
+- PR #3: `task/phase2-nextjs-web` → `dev` — https://github.com/masuggs515/sportswire/pull/3
 
 ---
 
@@ -83,6 +83,7 @@ Current task branch: task/phase2-nextjs-web (PR open → dev)
 | 2026-03-16 | NCAAB news + badge fix | task/phase2-flutter-feed | Added NCAAB ESPN RSS to fetch-news. Redeployed. Fixed team badge visibility for dark-primary teams (computeLuminance fallback to accent). Updated specs. |
 | 2026-03-16 | Two-layer team_tags extraction | task/phase2-flutter-feed | fetch-news: Layer 1 parses ESPN <category> tags against league-scoped lookups (NBA 30, NFL 32, NCAAB ~35 programs). Gemini fills the gap only when RSS returns zero tags. Gemini still always called for summary/analysis/is_hot. Redeployed. |
 | 2026-03-18 | Platform pivot: Flutter → Next.js | task/phase2-nextjs-web | Deleted sportswire/ Flutter project. Created Next.js 15 web app (TypeScript, Tailwind, App Router). Feed page, story detail page, StoryCard, GameTicker, TeamBadge, SettingsSheet, NavBar. Supabase SSR client. localStorage prefs. vercel.json. ESLint + TypeScript clean. Updated all specs. |
+| 2026-03-19 | Add scores page | task/phase2-nextjs-web | New: /scores page with LIVE→TODAY→UPCOMING→RECENT sections, league tabs, team colors, realtime, win probability. Updated GameTicker to prioritise live→upcoming. NavBar now has Feed + Scores nav links with active state. ESLint + TypeScript clean. |
 
 ---
 
