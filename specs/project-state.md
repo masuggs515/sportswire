@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-19 (session 12)
-Current phase: 2 — Next.js Web Feed (in progress — PR open)
-Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
+Last updated: 2026-03-19 (session 13)
+Current phase: 2 — Next.js Web Feed (in progress)
+Current task branch: task/ncaab-scores-espn (PR open → dev)
 
 **Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
@@ -34,7 +34,8 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 
 - PR #1: `task/phase1-data-foundation` → `dev` — https://github.com/masuggs515/sportswire/pull/1
 - PR #2: `task/phase2-flutter-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/2 (superseded by pivot — close without merging)
-- PR #3: `task/phase2-nextjs-web` → `dev` — https://github.com/masuggs515/sportswire/pull/3
+- PR #3: `task/phase2-nextjs-web` → `dev` — MERGED 2026-03-19
+- PR #4: `task/ncaab-scores-espn` → `dev` — (URL pending push)
 
 ---
 
@@ -42,8 +43,10 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 
 - [ ] Close PR #2 (task/phase2-flutter-feed) without merging — superseded by Next.js pivot — raised 2026-03-18
 - [ ] Review and merge PR #1 (task/phase1-data-foundation → dev) — https://github.com/masuggs515/sportswire/pull/1 — raised 2026-03-16
-- [ ] Review and merge PR #3 (task/phase2-nextjs-web → dev) — (URL pending push) — raised 2026-03-18
-- [ ] Vercel deployment — create Vercel project, import GitHub repo, set rootDirectory=web, add env vars from web/.env.local — raised 2026-03-18
+- [ ] Vercel deployment — create Vercel project, import GitHub repo, set rootDirectory=web in Vercel dashboard settings, add env vars from web/.env.local — raised 2026-03-18
+- [ ] Apply migration 007 — run `supabase/migrations/20260319000007_ncaab_cron.sql` in sportswire-dev SQL Editor to register fetch-ncaab-scores cron job — raised 2026-03-19
+- [ ] Deploy fetch-ncaab-scores Edge Function — run: `supabase functions deploy fetch-ncaab-scores --no-verify-jwt` against sportswire-dev — raised 2026-03-19
+- [ ] Review and merge PR #4 (task/ncaab-scores-espn → dev) — (URL pending push) — raised 2026-03-19
 - [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
 - [ ] Gemini ai_analysis backfill — quota exhausted on 2026-03-16 (was using deprecated gemini-2.0-flash). Migrated to gemini-2.5-flash-lite-preview-06-17 (1,000 RPD free tier). After quota resets at midnight Pacific Time: (1) run `DELETE FROM stories;` in Supabase SQL Editor, (2) invoke fetch-news manually to re-ingest all articles with ai_analysis populating correctly — raised 2026-03-16
 - [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before story detail standings work — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
@@ -85,6 +88,7 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 | 2026-03-18 | Platform pivot: Flutter → Next.js | task/phase2-nextjs-web | Deleted sportswire/ Flutter project. Created Next.js 15 web app (TypeScript, Tailwind, App Router). Feed page, story detail page, StoryCard, GameTicker, TeamBadge, SettingsSheet, NavBar. Supabase SSR client. localStorage prefs. vercel.json. ESLint + TypeScript clean. Updated all specs. |
 | 2026-03-19 | Add scores page | task/phase2-nextjs-web | New: /scores page with LIVE→TODAY→UPCOMING→RECENT sections, league tabs, team colors, realtime, win probability. Updated GameTicker to prioritise live→upcoming. NavBar now has Feed + Scores nav links with active state. ESLint + TypeScript clean. |
 | 2026-03-19 | App branding rename | task/phase2-nextjs-web | Renamed app from SportsWire to Mint Street Sports in NavBar, layout.tsx metadata, web/README.md, and spec files. Internal repo/Supabase names unchanged. |
+| 2026-03-19 | NCAAB scores + NFL gate | task/ncaab-scores-espn | New fetch-ncaab-scores Edge Function (ESPN public API, Nov–Apr gate). NFL seasonal gate (Sep–Feb) in fetch-scores. ScoresClient NCAAB tab shows real scores. NFL offseason message. Migration 007 for cron. Specs updated. |
 
 ---
 
@@ -103,7 +107,7 @@ Current task branch: task/phase2-nextjs-web (PR #3 open → dev)
 
 ## Environment Notes
 
-- sportswire-dev: ✅ created, all 6 migrations applied, 3 Edge Functions live (fetch-news, fetch-scores, get-story-detail), 5 cron jobs running
+- sportswire-dev: ✅ created, migrations 001–006 applied, 4 Edge Functions live (fetch-news, fetch-scores, get-story-detail, fetch-standings), 5 cron jobs running. fetch-ncaab-scores pending deploy + migration 007.
 - sportswire-prod: not yet created
 - Local Supabase: not yet started
 - BallDontLie: current tier does not include standings endpoint — fetch-standings disabled until upgraded

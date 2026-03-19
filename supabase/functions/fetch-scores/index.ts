@@ -81,35 +81,43 @@ serve(async () => {
       }
     }
 
-    // ── NFL games ───────────────────────────────────────────────────────────
-    // bdl_client inserts a 300ms gap between sequential calls automatically
-    const nflData = await bdlFetch(
-      `/nfl/v1/games?per_page=25&dates[]=${today}&dates[]=${tomorrow}`
-    );
+    // ── NFL games — seasonal gate Sep–Feb ────────────────────────────────────
+    // NFL season runs September through February. Skip BDL call outside that window
+    // to conserve request budget. bdl_client inserts a 300ms gap automatically.
+    const nflMonth  = new Date().getUTCMonth() + 1; // 1–12
+    const nflActive = nflMonth >= 9 || nflMonth <= 2;
 
-    for (const game of nflData.data ?? []) {
-      const nflStatus = normalizeStatus(game.status);
-      const { error } = await supabase.from("games").upsert({
-        external_id:  `nfl_${game.id}`,
-        league:       "NFL",
-        home_team:    game.home_team?.abbreviation ?? "",
-        away_team:    game.away_team?.abbreviation ?? "",
-        home_score:   game.home_team_score ?? 0,
-        away_score:   game.away_team_score ?? 0,
-        status:       nflStatus,
-        game_time:    game.date ?? null,
-        // BDL NFL uses game.quarter (1-4) for active games.
-        // Scheduled games: null. Final: "Final". Never store ISO datetime in period.
-        period:       nflStatus === "final"       ? "Final"
-                    : nflStatus === "in_progress" ? (game.quarter ? `Q${game.quarter}` : (game.status ?? null))
-                    : null,
-        fetched_at:   new Date().toISOString(),
-      }, { onConflict: "external_id" });
+    if (!nflActive) {
+      console.log("[fetch-scores] NFL offseason — skipping NFL games");
+    } else {
+      const nflData = await bdlFetch(
+        `/nfl/v1/games?per_page=25&dates[]=${today}&dates[]=${tomorrow}`
+      );
 
-      if (error) {
-        console.error(`[fetch-scores] NFL upsert failed for game ${game.id}:`, error.message);
-      } else {
-        nflInserted++;
+      for (const game of nflData.data ?? []) {
+        const nflStatus = normalizeStatus(game.status);
+        const { error } = await supabase.from("games").upsert({
+          external_id:  `nfl_${game.id}`,
+          league:       "NFL",
+          home_team:    game.home_team?.abbreviation ?? "",
+          away_team:    game.away_team?.abbreviation ?? "",
+          home_score:   game.home_team_score ?? 0,
+          away_score:   game.away_team_score ?? 0,
+          status:       nflStatus,
+          game_time:    game.date ?? null,
+          // BDL NFL uses game.quarter (1-4) for active games.
+          // Scheduled games: null. Final: "Final". Never store ISO datetime in period.
+          period:       nflStatus === "final"       ? "Final"
+                      : nflStatus === "in_progress" ? (game.quarter ? `Q${game.quarter}` : (game.status ?? null))
+                      : null,
+          fetched_at:   new Date().toISOString(),
+        }, { onConflict: "external_id" });
+
+        if (error) {
+          console.error(`[fetch-scores] NFL upsert failed for game ${game.id}:`, error.message);
+        } else {
+          nflInserted++;
+        }
       }
     }
 

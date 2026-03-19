@@ -70,6 +70,10 @@ Definition of Done:
 - [x] Settings sheet: team picker, saves preferences to localStorage
 - [x] Share button copies deep link URL to clipboard
 - [x] ESLint clean, TypeScript clean
+- [x] NCAAB scores via ESPN public scoreboard API (fetch-ncaab-scores Edge Function)
+- [x] NCAAB live/today/upcoming/final sections on /scores page
+- [x] NFL seasonal gate in fetch-scores (Sep–Feb only)
+- [x] NFL offseason message on /scores page
 - [ ] vercel.json configured — deploy to Vercel (TODO MAS)
 - [ ] Mixpanel events (TODO MAS — add mixpanel-browser)
 
@@ -147,6 +151,8 @@ mint-street-news/
         index.ts                    ← BallDontLie → games table
       fetch-standings/
         index.ts                    ← BallDontLie → standings table
+      fetch-ncaab-scores/
+        index.ts                    ← ESPN NCAAB scoreboard → games table (Nov–Apr)
       get-story-detail/
         index.ts                    ← assembles full story payload for web client
     tests/
@@ -176,7 +182,7 @@ mint-street-news/
     .env.local                      ← gitignored
     package.json
 
-  vercel.json                       ← Vercel deployment config (rootDirectory: web/)
+  vercel.json                       ← deleted — rootDirectory set in Vercel dashboard instead
 ```
 
 ---
