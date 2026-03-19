@@ -1,16 +1,18 @@
 # Project State
-Last updated: 2026-03-16 (session 9)
-Current phase: 2 — Flutter Feed (complete pending PR merge — feed screen done, story screen stub)
-Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
+Last updated: 2026-03-18 (session 10)
+Current phase: 2 — Next.js Web Feed (in progress — PR open)
+Current task branch: task/phase2-nextjs-web (PR open → dev)
+
+**Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
 ---
 
 ## Phase Completion
 
 - [ ] Phase 1 — Data Foundation (complete pending Gemini ai_analysis backfill — see TODO MAS below)
-- [ ] Phase 2 — Flutter Feed (in progress — feed screen complete, story screen stub only)
+- [ ] Phase 2 — Next.js Web Feed (in progress — core pages built, pending Vercel deploy + Mixpanel)
 - [ ] Phase 3 — Auth & Preferences (not started)
-- [ ] Phase 4 — Notifications & Polish (not started)
+- [ ] Phase 4 — Analytics & Polish (not started)
 - [ ] Phase 5 — More Sports (future)
 
 ---
@@ -31,18 +33,20 @@ Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
 ## Open PRs
 
 - PR #1: `task/phase1-data-foundation` → `dev` — https://github.com/masuggs515/sportswire/pull/1
-- PR #2: `task/phase2-flutter-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/2
+- PR #2: `task/phase2-flutter-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/2 (superseded by pivot — close without merging)
+- PR #3: `task/phase2-nextjs-web` → `dev` — (open after this session)
 
 ---
 
 ## Open TODO MAS Items
 
+- [ ] Close PR #2 (task/phase2-flutter-feed) without merging — superseded by Next.js pivot — raised 2026-03-18
 - [ ] Review and merge PR #1 (task/phase1-data-foundation → dev) — https://github.com/masuggs515/sportswire/pull/1 — raised 2026-03-16
-- [ ] Review and merge PR #2 (task/phase2-flutter-feed → dev) — https://github.com/masuggs515/sportswire/pull/2 — raised 2026-03-16
-- [ ] Story screen Phase 3 — full layout (score strip, standings table, related stories) per flutter-agent-spec.md §Story Screen — raised 2026-03-16
-- [ ] Phase 3 — add widget tests for feed, settings, and providers per testing-agent-spec.md — raised 2026-03-16
-- [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before Phase 2 — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
+- [ ] Review and merge PR #3 (task/phase2-nextjs-web → dev) — (URL pending push) — raised 2026-03-18
+- [ ] Vercel deployment — create Vercel project, import GitHub repo, set rootDirectory=web, add env vars from web/.env.local — raised 2026-03-18
+- [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
 - [ ] Gemini ai_analysis backfill — quota exhausted on 2026-03-16 (was using deprecated gemini-2.0-flash). Migrated to gemini-2.5-flash-lite-preview-06-17 (1,000 RPD free tier). After quota resets at midnight Pacific Time: (1) run `DELETE FROM stories;` in Supabase SQL Editor, (2) invoke fetch-news manually to re-ingest all articles with ai_analysis populating correctly — raised 2026-03-16
+- [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before story detail standings work — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
 
 ---
 
@@ -78,6 +82,7 @@ Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
 | 2026-03-16 | Phase 2 Flutter Feed | task/phase2-flutter-feed | Flutter project created. Feed screen, game ticker, story card, settings sheet, all Mixpanel events, Riverpod providers, shimmer skeletons, go_router. flutter analyze clean. Story screen is stub only (Phase 3). |
 | 2026-03-16 | NCAAB news + badge fix | task/phase2-flutter-feed | Added NCAAB ESPN RSS to fetch-news. Redeployed. Fixed team badge visibility for dark-primary teams (computeLuminance fallback to accent). Updated specs. |
 | 2026-03-16 | Two-layer team_tags extraction | task/phase2-flutter-feed | fetch-news: Layer 1 parses ESPN <category> tags against league-scoped lookups (NBA 30, NFL 32, NCAAB ~35 programs). Gemini fills the gap only when RSS returns zero tags. Gemini still always called for summary/analysis/is_hot. Redeployed. |
+| 2026-03-18 | Platform pivot: Flutter → Next.js | task/phase2-nextjs-web | Deleted sportswire/ Flutter project. Created Next.js 15 web app (TypeScript, Tailwind, App Router). Feed page, story detail page, StoryCard, GameTicker, TeamBadge, SettingsSheet, NavBar. Supabase SSR client. localStorage prefs. vercel.json. ESLint + TypeScript clean. Updated all specs. |
 
 ---
 
@@ -85,11 +90,12 @@ Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
 
 | Command | What it does |
 |---|---|
-| `bash scripts/run_dev.sh` | Run Flutter app against sportswire-dev. Loads `.env.dev` automatically. |
-| `bash scripts/run_dev.sh -d <device-id>` | Target a specific device. |
-| `bash scripts/run_dev.sh --release` | Release mode build against dev backend. |
+| `cd web && npm run dev` | Start Next.js dev server at localhost:3000. Fill in `web/.env.local` first. |
+| `cd web && npm run build` | Production build. |
+| `cd web && npm run lint` | ESLint check. |
+| `cd web && npx tsc --noEmit` | TypeScript check. |
 
-`.env.dev` lives at the repo root and is gitignored via `.env.*`. It must contain `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, and `MIXPANEL_TOKEN`.
+`web/.env.local` lives in the web/ directory and is gitignored. It must contain `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_MIXPANEL_TOKEN`.
 
 ---
 
@@ -100,7 +106,8 @@ Current task branch: task/phase2-flutter-feed (PR #2 open → dev)
 - Local Supabase: not yet started
 - BallDontLie: current tier does not include standings endpoint — fetch-standings disabled until upgraded
 - Google AI (Gemini): model gemini-2.5-flash-lite-preview-06-17 ✅ (gemini-2.0-flash deprecated 2026-03-03), key set ✅, deployed ✅ — backfill required after quota resets at midnight Pacific Time
-- GitHub: repo connected ✅, dev branch pushed ✅, PR #1 open ✅, PR #2 open ✅
+- GitHub: repo connected ✅, dev branch pushed ✅, PR #1 open ✅, PR #2 open (close without merging — superseded)
 - Mixpanel: ✅ account created, SportsWire project created, token in password manager
-- Cron note: `cleanup` and `recalc-hot` are SQL-only cron jobs — they do NOT appear in the Edge Functions list in the Supabase dashboard. This is correct and expected.
+- Vercel: not yet connected — TODO MAS
 - Key lesson: Edge Function secrets must use `supabase secrets set` (CLI), NOT Supabase Vault UI. Runtime auto-injects `SUPABASE_SERVICE_ROLE_KEY` (old name), not `SUPABASE_SECRET_KEY`.
+- Next.js key: `web/.env.local` uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (not ANON_KEY) to match existing Edge Function naming convention.

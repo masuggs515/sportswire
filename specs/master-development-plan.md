@@ -7,7 +7,9 @@
 
 ## Overview
 
-SportsWire is a personal sports news app for NBA, NFL, and NCAAB, built in Flutter with Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
+SportsWire is a personal sports news web app for NBA, NFL, and NCAAB, built with Next.js and Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
+
+**Platform pivot (2026-03-18):** Replaced Flutter mobile app with a Next.js 15 web app. Supabase backend unchanged.
 
 ---
 
@@ -15,9 +17,8 @@ SportsWire is a personal sports news app for NBA, NFL, and NCAAB, built in Flutt
 
 | Layer | Technology |
 |---|---|
-| Mobile app | Flutter (latest stable) |
-| State management | flutter_riverpod |
-| Navigation + deep links | go_router |
+| Web app | Next.js 15 (App Router, TypeScript, Tailwind CSS) |
+| Hosting | Vercel (rootDirectory: web/) |
 | Backend | Supabase (Postgres + Edge Functions + Cron) |
 | Scores / stats / standings | BallDontLie API (All-Star tier — $9.99/sport/mo) |
 | News | ESPN RSS (official feeds — free) |
@@ -51,66 +52,64 @@ Definition of Done:
 
 ---
 
-### Phase 2 — Flutter Feed
-**Goal:** Working feed screen and story screen on device.
+### Phase 2 — Next.js Web Feed
+**Goal:** Working feed page and story page deployed to Vercel.
+
+**Platform pivot (2026-03-18):** Flutter replaced with Next.js 15 web app. See `specs/web-agent-spec.md`.
 
 Definition of Done:
-- [ ] Flutter project created with correct package structure
-- [ ] Supabase Flutter SDK initialised with dev credentials
-- [ ] Feed screen showing real stories from Supabase
-- [ ] Stories sorted: followed teams first, hot stories next, then chronological
-- [ ] League tabs (All / NBA / NFL) filtering correctly
-- [ ] Game ticker showing today's scores and upcoming games
-- [ ] Story card tapping opens story screen
-- [ ] Story screen showing: headline, AI analysis, recent scores, upcoming games, standings, related stories
-- [ ] "Read Full Story" opens ESPN article URL in browser
-- [ ] Loading skeletons shown while data fetches
-- [ ] Settings sheet: team picker, saves preferences locally
-- [ ] Share link generates correct deep link URL
-- [ ] App runs on Android without crashes
-- [ ] App runs on iOS without crashes
+- [x] Next.js 15 project created (TypeScript, Tailwind, App Router, src/)
+- [x] Supabase SSR client initialised with dev credentials
+- [x] Feed page showing real stories from Supabase
+- [x] Stories sorted: followed teams first, hot stories next, then chronological
+- [x] League tabs (All / NBA / NFL / NCAAB) filtering correctly
+- [x] Game ticker showing today's scores with realtime updates
+- [x] Story card tapping opens story detail page
+- [x] Story page showing: headline, AI analysis, recent scores, upcoming games, standings, related stories
+- [x] "Read Full Story" opens ESPN article URL in new tab
+- [x] Settings sheet: team picker, saves preferences to localStorage
+- [x] Share button copies deep link URL to clipboard
+- [x] ESLint clean, TypeScript clean
+- [ ] vercel.json configured — deploy to Vercel (TODO MAS)
+- [ ] Mixpanel events (TODO MAS — add mixpanel-browser)
 
 ---
 
 ### Phase 3 — Auth & Preferences
-**Goal:** Optional login, preferences sync across devices.
+**Goal:** Optional login, preferences sync across browsers/devices.
 
 Definition of Done:
-- [ ] App works fully without login (device-only preferences)
+- [ ] App works fully without login (localStorage-only preferences)
 - [ ] Optional login via magic link (Supabase Auth)
 - [ ] On login: local preferences pushed to Supabase if no account exists
-- [ ] On login: account preferences pulled to device if account already exists
+- [ ] On login: account preferences pulled to browser if account already exists
 - [ ] user_preferences table populated on login
-- [ ] Followed teams persist across app restarts (local)
-- [ ] Followed teams sync to new device after login
-- [ ] Deep links open correct story on cold start
+- [ ] Followed teams persist across browser sessions (localStorage)
+- [ ] Followed teams sync to new browser after login
+- [ ] Direct `/story/:id` URLs navigate correctly
 
 ---
 
-### Phase 4 — Notifications & Polish
-**Goal:** Push notifications for followed teams, visual polish.
+### Phase 4 — Analytics & Polish
+**Goal:** Mixpanel analytics, visual polish, performance.
 
 Definition of Done:
-- [ ] BallDontLie webhook wired to Supabase Edge Function
-- [ ] Push notification sent when followed team's game goes live
-- [ ] Push notification sent on game final score
-- [ ] Notification opens app to correct story or score
-- [ ] Mixpanel events firing: story_viewed, team_followed, share_link_generated, tab_changed
+- [ ] Mixpanel events firing: story_viewed, team_followed, share_link_generated, tab_changed, settings_opened
 - [ ] Mixpanel dashboard showing real data
 - [ ] Hot story algorithm working (10+ views in 3 hours)
-- [ ] App icon and splash screen final
-- [ ] Performance: feed loads under 1 second on good connection
+- [ ] Loading skeletons shown during data fetches
+- [ ] Performance: feed loads under 1 second on good connection (Next.js ISR)
 
 ---
 
 ### Phase 5 — More Sports (future)
-**Goal:** Add MLB, NHL, and NCAAB scores/standings with zero Flutter changes to the feed itself.
+**Goal:** Add MLB, NHL, and NCAAB scores/standings with zero web UI changes to the feed itself.
 
 Definition of Done:
 - [ ] BallDontLie All-Star added for MLB and NHL
 - [ ] ESPN RSS feeds added for MLB and NHL
 - [ ] New Edge Functions or updated existing ones to handle additional leagues
-- [ ] Flutter league tabs updated to show MLB / NHL
+- [ ] League tabs updated in FeedClient.tsx to show MLB / NHL
 - [ ] Teams table seeded with MLB and NHL data
 - [ ] All existing tests passing with expanded league data
 - [ ] NCAAB scores UI decision: how to handle 350+ teams in game ticker and story screen (design decision required before implementation)
@@ -120,13 +119,13 @@ Definition of Done:
 ## File Structure
 
 ```
-sportswire/
+mint-street-news/
   specs/
     master-development-plan.md      ← this file
     project-state.md
     manager-agent-spec.md
     supabase-agent-spec.md
-    flutter-agent-spec.md
+    web-agent-spec.md               ← replaces flutter-agent-spec.md
     analytics-agent-spec.md
     review-agent-spec.md
     testing-agent-spec.md
@@ -136,43 +135,48 @@ sportswire/
       20260315000001_create_tables.sql
       20260315000002_rls_policies.sql
       20260315000003_indexes.sql
-      20260315000004_seed_teams.sql
+      20260315000004_stored_procedures.sql
+      20260315000005_seed_teams.sql
+      20260315000006_cron_schedule.sql
     functions/
       _shared/
         bdl_client.ts               ← rate-aware BallDontLie HTTP client
       fetch-news/
-        index.ts                    ← ESPN RSS → Claude → stories table
+        index.ts                    ← ESPN RSS → Gemini → stories table
       fetch-scores/
         index.ts                    ← BallDontLie → games table
       fetch-standings/
         index.ts                    ← BallDontLie → standings table
       get-story-detail/
-        index.ts                    ← assembles full story payload for Flutter
+        index.ts                    ← assembles full story payload for web client
     tests/
       rls_test.ts
       fetch_scores_test.ts
       get_story_detail_test.ts
 
-  lib/
-    main.dart
-    app.dart
-    core/
-      supabase.dart
-      router.dart
-      team_config.dart
-    features/
-      feed/
-      story/
-      settings/
-      auth/
-    shared/
-      models/
-      widgets/
+  web/                              ← Next.js 15 web app (new — added 2026-03-18)
+    src/
+      app/
+        page.tsx                    ← Feed page (/)
+        layout.tsx                  ← Root layout with NavBar
+        story/[id]/page.tsx         ← Story detail page
+      components/
+        NavBar.tsx
+        FeedClient.tsx
+        StoryCard.tsx
+        GameTicker.tsx
+        StoryDetailClient.tsx
+        TeamBadge.tsx
+        SettingsSheet.tsx
+      lib/
+        types.ts
+        teamConfig.ts
+        supabase/client.ts
+        supabase/server.ts
+    .env.local                      ← gitignored
+    package.json
 
-  test/
-    feed/
-    story/
-    settings/
+  vercel.json                       ← Vercel deployment config (rootDirectory: web/)
 ```
 
 ---
@@ -183,6 +187,6 @@ sportswire/
 |---|---|---|
 | BallDontLie | app.balldontlie.io → Account Settings → API Keys | Supabase Vault: `BALLDONTLIE_API_KEY` |
 | Google Gemini | aistudio.google.com → Get API key | Supabase Vault: `GOOGLE_AI_KEY` |
-| Mixpanel | mixpanel.com → Project Settings → Project Token | Flutter `.env.dev` as `MIXPANEL_TOKEN` |
-| Supabase anon key | Supabase dashboard → Project Settings → API | Flutter `.env.dev` as `SUPABASE_PUBLISHABLE_KEY` |
-| Supabase service role key | Supabase dashboard → Project Settings → API | `.env.dev` only — NEVER in Flutter app |
+| Mixpanel | mixpanel.com → Project Settings → Project Token | `web/.env.local` as `NEXT_PUBLIC_MIXPANEL_TOKEN` |
+| Supabase anon key | Supabase dashboard → Project Settings → API | `web/.env.local` as `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` |
+| Supabase service role key | Supabase dashboard → Project Settings → API | Supabase Vault only — NEVER in web app |
