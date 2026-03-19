@@ -28,6 +28,7 @@ Current task branch: task/ncaab-scores-espn (PR open → dev)
 | 20260315000005_seed_teams | not yet | ✅ applied | not yet |
 | 20260315000006_cron_schedule | not yet | ✅ applied | not yet |
 | 20260319000007_ncaab_cron | not yet | ✅ applied | not yet |
+| 20260319000008_ncaab_cron_1min | not yet | ✅ applied | not yet |
 
 ---
 

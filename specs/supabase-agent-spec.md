@@ -460,9 +460,9 @@ SELECT cron.schedule('cleanup', '0 4 * * *', ...);
 -- Mark hot if 10+ views in last 3 hours. Unmark if dropped below threshold.
 SELECT cron.schedule('recalc-hot', '0 * * * *', ...);
 
--- NCAAB scores: every 5 minutes (seasonal gate Nov–Apr inside function)
--- ESPN public API — zero BDL requests
-SELECT cron.schedule('fetch-ncaab-scores', '*/5 * * * *', ...);
+-- NCAAB scores: every 1 minute (seasonal gate Nov–Apr inside function)
+-- ESPN public API — zero BDL requests. pg_cron minimum granularity is 1 min.
+SELECT cron.schedule('fetch-ncaab-scores', '*/1 * * * *', ...);
 ```
 
 **Request budget analysis (free tier: 5 req/min):**
