@@ -1,5 +1,5 @@
 # Master Development Plan
-**Project:** SportsWire  
+**Project:** Mint Street Sports
 **Document Version:** 1.0  
 **Last Updated:** March 2026
 
@@ -7,7 +7,7 @@
 
 ## Overview
 
-SportsWire is a personal sports news web app for NBA, NFL, and NCAAB, built with Next.js and Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
+Mint Street Sports is a personal sports news web app for NBA, NFL, and NCAAB, built with Next.js and Supabase as the backend. It aggregates news from ESPN RSS, scores and stats from BallDontLie, and uses Gemini Flash to generate AI summaries of articles. Users follow their teams, get a personalised feed, and tap into a full story view with scores, standings, and related stories.
 
 **Platform pivot (2026-03-18):** Replaced Flutter mobile app with a Next.js 15 web app. Supabase backend unchanged.
 

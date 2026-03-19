@@ -28,7 +28,7 @@ export default function NavBar() {
       <header className="sticky top-0 z-40 bg-gray-900 border-b border-gray-800">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center gap-6">
           <Link href="/" className="text-white font-bold text-xl tracking-tight mr-2">
-            SportsWire
+            Mint Street Sports
           </Link>
 
           {navLink('/', 'Feed')}
