@@ -27,6 +27,7 @@ Current task branch: task/ncaab-scores-espn (PR open → dev)
 | 20260315000004_stored_procedures | not yet | ✅ applied | not yet |
 | 20260315000005_seed_teams | not yet | ✅ applied | not yet |
 | 20260315000006_cron_schedule | not yet | ✅ applied | not yet |
+| 20260319000007_ncaab_cron | not yet | ✅ applied | not yet |
 
 ---
 
@@ -44,8 +45,6 @@ Current task branch: task/ncaab-scores-espn (PR open → dev)
 - [ ] Close PR #2 (task/phase2-flutter-feed) without merging — superseded by Next.js pivot — raised 2026-03-18
 - [ ] Review and merge PR #1 (task/phase1-data-foundation → dev) — https://github.com/masuggs515/sportswire/pull/1 — raised 2026-03-16
 - [ ] Vercel deployment — create Vercel project, import GitHub repo, set rootDirectory=web in Vercel dashboard settings, add env vars from web/.env.local — raised 2026-03-18
-- [ ] Apply migration 007 — run `supabase/migrations/20260319000007_ncaab_cron.sql` in sportswire-dev SQL Editor to register fetch-ncaab-scores cron job — raised 2026-03-19
-- [ ] Deploy fetch-ncaab-scores Edge Function — run: `supabase functions deploy fetch-ncaab-scores --no-verify-jwt` against sportswire-dev — raised 2026-03-19
 - [ ] Review and merge PR #4 (task/ncaab-scores-espn → dev) — (URL pending push) — raised 2026-03-19
 - [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
 - [ ] Gemini ai_analysis backfill — quota exhausted on 2026-03-16 (was using deprecated gemini-2.0-flash). Migrated to gemini-2.5-flash-lite-preview-06-17 (1,000 RPD free tier). After quota resets at midnight Pacific Time: (1) run `DELETE FROM stories;` in Supabase SQL Editor, (2) invoke fetch-news manually to re-ingest all articles with ai_analysis populating correctly — raised 2026-03-16
@@ -107,7 +106,7 @@ Current task branch: task/ncaab-scores-espn (PR open → dev)
 
 ## Environment Notes
 
-- sportswire-dev: ✅ created, migrations 001–006 applied, 4 Edge Functions live (fetch-news, fetch-scores, get-story-detail, fetch-standings), 5 cron jobs running. fetch-ncaab-scores pending deploy + migration 007.
+- sportswire-dev: ✅ created, migrations 001–007 applied, 5 Edge Functions live (fetch-news, fetch-scores, get-story-detail, fetch-standings, fetch-ncaab-scores), 6 cron jobs running
 - sportswire-prod: not yet created
 - Local Supabase: not yet started
 - BallDontLie: current tier does not include standings endpoint — fetch-standings disabled until upgraded
