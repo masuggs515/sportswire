@@ -49,7 +49,11 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - NFL:     `https://www.espn.com/espn/rss/nfl/news`
 - NCAAB:   `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
 - Yankees: `https://www.espn.com/mlb/rss/news?id=10` — added 2026-03-19; league = 'Yankees', team_tags = ['NYY']
-- No auth required. Official ESPN feeds. Free.
+- Panthers (Official): `https://www.panthers.com/rss/news` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Panthers Wire (USA Today): `https://pantherswire.usatoday.com/feed/` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Cat Scratch Reader (SB Nation): `https://www.catscratchreader.com/rss/current` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Panthers feeds use title-based deduplication within each run to prevent duplicates across sources
+- No auth required. Official ESPN feeds + team feeds. Free.
 - Display headlines and summaries. Always link to full article_url. Required by ESPN ToS.
 
 ### Google Gemini Flash Lite (AI Summaries)
@@ -394,7 +398,7 @@ Shared by all Edge Functions that call BallDontLie. Handles:
 The response now includes `rssTagHits` in addition to `inserted`/`skipped` so you can monitor how often Layer 1 is firing.
 
 #### Logic:
-1. Fetch NBA, NFL, and NCAAB ESPN RSS feeds (see ESPN RSS section above)
+1. Fetch NBA, NFL, NCAAB, and Yankees ESPN RSS feeds (see ESPN RSS section above)
 2. Parse XML items: extract guid, title, description, link, pubDate, all `<category>` tags
 3. For each item: skip if `external_id` already exists in `stories`
 4. Layer 1: run `tagsFromCategories()` against `LEAGUE_LOOKUP[league]`
@@ -569,7 +573,7 @@ supabase/
     _shared/
       bdl_client.ts
     fetch-news/
-      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/Yankees) → stories table
+      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/Yankees) + Panthers (3 feeds, title-deduped) → stories table
     fetch-scores/
       index.ts                             -- ⚠️ DEPRECATED 2026-03-19 — BDL NBA+NFL (cron unscheduled)
     fetch-nba-scores/
