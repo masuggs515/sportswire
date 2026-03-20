@@ -49,7 +49,12 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - NFL:     `https://www.espn.com/espn/rss/nfl/news`
 - NCAAB:   `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
 - Yankees: `https://www.espn.com/mlb/rss/news?id=10` — added 2026-03-19; league = 'Yankees', team_tags = ['NYY']
-- No auth required. Official ESPN feeds. Free.
+- Panthers (Official): `https://www.panthers.com/rss/news` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Panthers Wire (USA Today): `https://pantherswire.usatoday.com/feed/` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Cat Scratch Reader (SB Nation): `https://www.catscratchreader.com/rss/current` — added 2026-03-19; league = 'Panthers', team_tags = ['CAR', 'Panthers']
+- Panthers feeds processed BEFORE the ESPN NFL loop so their guids are claimed first; prevents the same story being ingested as league = 'NFL'
+- Panthers feeds use title-based deduplication within each run to prevent duplicates across the three sources
+- No auth required. Official ESPN feeds + team feeds. Free.
 - Display headlines and summaries. Always link to full article_url. Required by ESPN ToS.
 
 ### Google Gemini Flash Lite (AI Summaries)
@@ -394,13 +399,14 @@ Shared by all Edge Functions that call BallDontLie. Handles:
 The response now includes `rssTagHits` in addition to `inserted`/`skipped` so you can monitor how often Layer 1 is firing.
 
 #### Logic:
-1. Fetch NBA, NFL, and NCAAB ESPN RSS feeds (see ESPN RSS section above)
-2. Parse XML items: extract guid, title, description, link, pubDate, all `<category>` tags
-3. For each item: skip if `external_id` already exists in `stories`
-4. Layer 1: run `tagsFromCategories()` against `LEAGUE_LOOKUP[league]`
-5. Call Gemini Flash with headline + description, always requesting summary, analysis, is_hot, and team_tags
-6. Merge: if Layer 1 found tags → use them; else use Gemini's team_tags
-7. Upsert to `stories`: external_id, league, team_tags, headline, rss_summary, ai_summary, ai_analysis, article_url, published_at, is_hot
+1. **Panthers feeds run first** (panthers.com, Panthers Wire, Cat Scratch Reader). All processed guids (new + already-in-DB) are added to `seenGuids`. team_tags hardcoded to `['CAR', 'Panthers']`. Title dedup within each run prevents cross-source duplicates.
+2. Fetch NBA, NFL, NCAAB, and Yankees ESPN RSS feeds (see ESPN RSS section above)
+3. Parse XML items: extract guid, title, description, link, pubDate, all `<category>` tags
+4. For each item: skip if guid is in `seenGuids` (claimed by Panthers loop), then skip if `external_id` already exists in `stories`
+5. Layer 1: run `tagsFromCategories()` against `LEAGUE_LOOKUP[league]`
+6. Call Gemini Flash with headline + description, always requesting summary, analysis, is_hot, and team_tags
+7. Merge: if Layer 1 found tags → use them; else use Gemini's team_tags
+8. Upsert to `stories`: external_id, league, team_tags, headline, rss_summary, ai_summary, ai_analysis, article_url, published_at, is_hot
 
 #### Lookup tables (in `fetch-news/index.ts`):
 - `NBA_TEAM_LOOKUP` — all 30 NBA teams, keyed by abbreviation, values are lowercase name fragments
@@ -569,7 +575,7 @@ supabase/
     _shared/
       bdl_client.ts
     fetch-news/
-      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/Yankees) → stories table
+      index.ts                             -- Panthers feeds (3 sources, first) + ESPN RSS (NBA/NFL/NCAAB/Yankees) → stories table
     fetch-scores/
       index.ts                             -- ⚠️ DEPRECATED 2026-03-19 — BDL NBA+NFL (cron unscheduled)
     fetch-nba-scores/

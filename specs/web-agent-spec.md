@@ -167,13 +167,15 @@ stories.sort((a, b) => {
 
 ### League tabs
 
-**Logged-out:** All / NBA / NFL / NCAAB / MLB / Yankees (static).
+**Logged-out:** All / NBA / NFL / Panthers / NCAAB / MLB / Yankees (static).
 
 **Logged-in:** Dynamic tabs based on `favorite_teams` from `user_preferences`:
 ```
-All | NBA | [NBA fav 1] | [NBA fav 2] | NFL | [NFL fav 1] | [NFL fav 2] | NCAAB | MLB | [MLB fav 1] | [MLB fav 2] | Yankees
+All | NBA | [NBA fav 1] | [NBA fav 2] | NFL | [NFL fav 1] | [NFL fav 2] | Panthers* | NCAAB | MLB | [MLB fav 1] | [MLB fav 2] | Yankees
 ```
-Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`.
+*Panthers tab is omitted when CAR is in NFL favorites (the 'CAR' fav tab already covers Panthers stories).
+
+Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`. Panthers tab filters by `story.league === 'Panthers'`.
 
 `page.tsx` fetches `user_preferences.favorite_teams` server-side (if user is logged in) and passes as `initialFavorites` prop. Client re-fetches on `favorites-changed` event (dispatched when SettingsSheet saves).
 
@@ -511,6 +513,7 @@ StandingsView       // 'Division' | 'Conference' | 'League'
 - [x] Scores page: team colors + win probability
 - [x] Scores page: ESPN team logos + linescores + leaders + live situation (MLB/NFL)
 - [x] Feed page: Yankees news tab
+- [x] Feed page: Panthers tab (after NFL, skipped if CAR in favorites)
 - [x] NavBar: Feed + Scores nav links with active state
 - [x] ESLint clean
 - [x] TypeScript clean

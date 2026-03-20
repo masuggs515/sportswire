@@ -8,7 +8,7 @@ import { getFollowedTeams } from './SettingsSheet'
 import { createClient } from '@/lib/supabase/client'
 
 // Static league tabs always present (in insertion-order position)
-const STATIC_LEAGUES = ['NBA', 'NFL', 'NCAAB', 'MLB', 'Yankees'] as const
+const STATIC_LEAGUES = ['NBA', 'NFL', 'Panthers', 'NCAAB', 'MLB', 'Yankees'] as const
 
 interface FeedClientProps {
   initialStories: Story[]
@@ -82,12 +82,14 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
   }, [])
 
   // Build dynamic tab list based on favorites
-  // Order: All | NBA | [NBA favs] | NFL | [NFL favs] | NCAAB | MLB | [MLB favs] | Yankees
+  // Order: All | NBA | [NBA favs] | NFL | [NFL favs] | Panthers (skip if CAR in favs) | NCAAB | MLB | [MLB favs] | Yankees
   const tabs = useMemo(() => {
+    const hasCARFavorite = favorites.some(f => f.league === 'NFL' && f.abbr === 'CAR')
     const result: string[] = ['All', 'NBA']
     favorites.filter(f => f.league === 'NBA').slice(0, 2).forEach(f => result.push(f.abbr))
     result.push('NFL')
     favorites.filter(f => f.league === 'NFL').slice(0, 2).forEach(f => result.push(f.abbr))
+    if (!hasCARFavorite) result.push('Panthers')
     result.push('NCAAB', 'MLB')
     favorites.filter(f => f.league === 'MLB').slice(0, 2).forEach(f => result.push(f.abbr))
     result.push('Yankees')
