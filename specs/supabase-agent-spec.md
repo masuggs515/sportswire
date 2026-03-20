@@ -49,11 +49,16 @@ You do not touch Flutter code. You do not touch Mixpanel directly. You consume t
 - NFL:     `https://www.espn.com/espn/rss/nfl/news`
 - NCAAB:   `https://www.espn.com/espn/rss/ncb/news` — added 2026-03-16 (March Madness)
 - MLB:     `https://www.espn.com/espn/rss/mlb/news`
+- NCAAF (general): `https://www.espn.com/college-football/rss/news` — added 2026-03-20; league = 'NCAAF', team_tags from NCAAF_TEAM_LOOKUP + Gemini fallback
 - Yankees: `https://www.espn.com/mlb/rss/news?id=10` — added 2026-03-19; league = 'MLB', team_tags from Gemini (NYY/Yankees)
 - Panthers (Official): `https://www.panthers.com/rss/news` — added 2026-03-19; league = 'NFL', team_tags from Gemini (CAR/Panthers)
 - Panthers Wire (USA Today): `https://pantherswire.usatoday.com/feed/` — added 2026-03-19; league = 'NFL'
 - Cat Scratch Reader (SB Nation): `https://www.catscratchreader.com/rss/current` — added 2026-03-19; league = 'NFL'
+- ESPN Oregon Ducks: `https://www.espn.com/college-football/team/rss/_/id/2483` — added 2026-03-20; league = 'NCAAF', team_tags = ['Oregon', 'Ducks'] via OREGON_FEED_LOOKUP
+- Ducks Wire (USA Today): `https://duckswire.usatoday.com/feed/` — added 2026-03-20; league = 'NCAAF', team_tags = ['Oregon', 'Ducks']
+- Addicted to Quack (SB Nation): `https://www.addictedtoquack.com/rss/current` — added 2026-03-20; league = 'NCAAF', team_tags = ['Oregon', 'Ducks']
 - Panthers and Yankees are NOT separate leagues. They are NFL and MLB stories respectively. The feed tabs filter by team_tags ('CAR'/'Panthers' and 'NYY'/'Yankees').
+- Oregon is NOT a separate league. Oregon feeds use league = 'NCAAF'. The Oregon tab filters by team_tags ('Oregon'/'Ducks').
 - No auth required. Official ESPN feeds + team feeds. Free.
 - Display headlines and summaries. Always link to full article_url. Required by ESPN ToS.
 
@@ -414,6 +419,8 @@ The response now includes `rssTagHits` in addition to `inserted`/`skipped` so yo
 - `NCAAB_TEAM_LOOKUP` — top ~35 programs by ESPN coverage volume; Gemini handles the long tail
 - `MLB_TEAM_LOOKUP` — all 30 MLB teams
 - `YANKEES_FEED_LOOKUP` — single-team lookup for the Yankees-specific feed
+- `NCAAF_TEAM_LOOKUP` — top ~30 CFB programs; Gemini handles the long tail
+- `OREGON_FEED_LOOKUP` — maps 'Oregon' and 'Ducks' abbreviations to "oregon"/"ducks" fragments; used by all 3 Oregon-specific feeds
 - Tables are league-scoped to avoid abbreviation collisions (ATL = Hawks in NBA, Falcons in NFL, Braves in MLB)
 - `LEAGUE_LOOKUP` maps feed key → lookup table (e.g. `NFL_Panthers_Official` → `NFL_TEAM_LOOKUP`)
 
@@ -578,7 +585,7 @@ supabase/
     _shared/
       bdl_client.ts
     fetch-news/
-      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/MLB) + Panthers feeds (NFL) + Yankees feed (MLB) → stories table
+      index.ts                             -- ESPN RSS (NBA/NFL/NCAAB/MLB/NCAAF) + Panthers feeds (NFL) + Yankees feed (MLB) + Oregon feeds (NCAAF) → stories table
     fetch-scores/
       index.ts                             -- ⚠️ DEPRECATED 2026-03-19 — BDL NBA+NFL (cron unscheduled)
     fetch-nba-scores/

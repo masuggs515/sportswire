@@ -26,24 +26,32 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ─── RSS feed URLs → league mapping ──────────────────────────────────────────
 // Panthers feeds: league = 'NFL' (team_tags handles Panthers tab filtering)
 // Yankees feed:   league = 'MLB' (team_tags handles Yankees tab filtering)
+// Oregon feeds:   league = 'NCAAF' (team_tags handles Oregon tab filtering)
 const ESPN_RSS: Record<string, string> = {
   NBA:     "https://www.espn.com/espn/rss/nba/news",
   NFL:     "https://www.espn.com/espn/rss/nfl/news",
   NCAAB:   "https://www.espn.com/espn/rss/ncb/news",
   MLB:     "https://www.espn.com/espn/rss/mlb/news",
+  NCAAF:   "https://www.espn.com/college-football/rss/news",
   // Team-specific feeds: ingest as their real league, team_tags drive tab filtering
-  NFL_Panthers_Official: "https://www.panthers.com/rss/news",
-  NFL_Panthers_Wire:     "https://pantherswire.usatoday.com/feed/",
-  NFL_Panthers_CSR:      "https://www.catscratchreader.com/rss/current",
-  MLB_Yankees:           "https://www.espn.com/mlb/rss/news?id=10",
+  NFL_Panthers_Official:  "https://www.panthers.com/rss/news",
+  NFL_Panthers_Wire:      "https://pantherswire.usatoday.com/feed/",
+  NFL_Panthers_CSR:       "https://www.catscratchreader.com/rss/current",
+  MLB_Yankees:            "https://www.espn.com/mlb/rss/news?id=10",
+  NCAAF_Oregon_ESPN:      "https://www.espn.com/college-football/team/rss/_/id/2483",
+  NCAAF_Oregon_DucksWire: "https://duckswire.usatoday.com/feed/",
+  NCAAF_Oregon_ATQ:       "https://www.addictedtoquack.com/rss/current",
 };
 
 // League normalisation — team-specific feed keys map to their real league value
 const FEED_LEAGUE: Record<string, string> = {
-  NFL_Panthers_Official: "NFL",
-  NFL_Panthers_Wire:     "NFL",
-  NFL_Panthers_CSR:      "NFL",
-  MLB_Yankees:           "MLB",
+  NFL_Panthers_Official:  "NFL",
+  NFL_Panthers_Wire:      "NFL",
+  NFL_Panthers_CSR:       "NFL",
+  MLB_Yankees:            "MLB",
+  NCAAF_Oregon_ESPN:      "NCAAF",
+  NCAAF_Oregon_DucksWire: "NCAAF",
+  NCAAF_Oregon_ATQ:       "NCAAF",
 };
 
 // ─── Gemini Flash endpoint ────────────────────────────────────────────────────
@@ -205,15 +213,59 @@ const YANKEES_FEED_LOOKUP: Record<string, string[]> = {
   NYY: ["new york yankees", "yankees", "new york"],
 };
 
+// NCAAF: top programs by ESPN coverage volume. Gemini handles the long tail.
+const NCAAF_TEAM_LOOKUP: Record<string, string[]> = {
+  ALA:    ["alabama crimson tide", "alabama"],
+  UGA:    ["georgia bulldogs", "georgia bulldogs"],
+  OSU:    ["ohio state buckeyes", "ohio state"],
+  MICH:   ["michigan wolverines", "michigan wolverines"],
+  ORE:    ["oregon ducks", "oregon ducks"],
+  CLEM:   ["clemson tigers", "clemson"],
+  LSU:    ["lsu tigers", "lsu"],
+  TENN:   ["tennessee volunteers", "tennessee vols"],
+  TEX:    ["texas longhorns", "texas longhorns"],
+  USC:    ["usc trojans", "southern california trojans"],
+  ND:     ["notre dame fighting irish", "notre dame"],
+  PSU:    ["penn state nittany lions", "penn state"],
+  TAMU:   ["texas a&m aggies", "texas a&m"],
+  OKLA:   ["oklahoma sooners", "oklahoma sooners"],
+  MISS:   ["ole miss rebels", "ole miss"],
+  UNC:    ["north carolina tar heels", "north carolina tar"],
+  ARIZ:   ["arizona wildcats", "arizona wildcats"],
+  UTAH:   ["utah utes", "utah utes"],
+  UW:     ["washington huskies", "washington huskies"],
+  WSU:    ["washington state cougars", "washington state"],
+  IOWA:   ["iowa hawkeyes", "iowa hawkeyes"],
+  WIS:    ["wisconsin badgers", "wisconsin badgers"],
+  NEB:    ["nebraska cornhuskers", "nebraska"],
+  KSU:    ["kansas state wildcats", "kansas state"],
+  PURDUE: ["purdue boilermakers", "purdue"],
+  FSU:    ["florida state seminoles", "florida state"],
+  UF:     ["florida gators", "florida gators"],
+  MIAMI:  ["miami hurricanes", "miami hurricanes"],
+  NCST:   ["nc state wolfpack", "nc state wolfpack"],
+  PENN:   ["pittsburgh panthers", "pittsburgh panthers"],
+};
+
+// Oregon-specific feeds: every article tags Oregon and Ducks
+const OREGON_FEED_LOOKUP: Record<string, string[]> = {
+  Oregon: ["oregon", "ducks"],
+  Ducks:  ["oregon", "ducks"],
+};
+
 const LEAGUE_LOOKUP: Record<string, Record<string, string[]>> = {
-  NBA:                   NBA_TEAM_LOOKUP,
-  NFL:                   NFL_TEAM_LOOKUP,
-  NCAAB:                 NCAAB_TEAM_LOOKUP,
-  MLB:                   MLB_TEAM_LOOKUP,
-  NFL_Panthers_Official: NFL_TEAM_LOOKUP,
-  NFL_Panthers_Wire:     NFL_TEAM_LOOKUP,
-  NFL_Panthers_CSR:      NFL_TEAM_LOOKUP,
-  MLB_Yankees:           YANKEES_FEED_LOOKUP,
+  NBA:                    NBA_TEAM_LOOKUP,
+  NFL:                    NFL_TEAM_LOOKUP,
+  NCAAB:                  NCAAB_TEAM_LOOKUP,
+  MLB:                    MLB_TEAM_LOOKUP,
+  NCAAF:                  NCAAF_TEAM_LOOKUP,
+  NFL_Panthers_Official:  NFL_TEAM_LOOKUP,
+  NFL_Panthers_Wire:      NFL_TEAM_LOOKUP,
+  NFL_Panthers_CSR:       NFL_TEAM_LOOKUP,
+  MLB_Yankees:            YANKEES_FEED_LOOKUP,
+  NCAAF_Oregon_ESPN:      OREGON_FEED_LOOKUP,
+  NCAAF_Oregon_DucksWire: OREGON_FEED_LOOKUP,
+  NCAAF_Oregon_ATQ:       OREGON_FEED_LOOKUP,
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
