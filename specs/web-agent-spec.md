@@ -173,7 +173,7 @@ stories.sort((a, b) => {
 ```
 All | NBA | [NBA fav 1] | [NBA fav 2] | NFL | [NFL fav 1] | [NFL fav 2] | Panthers* | NCAAB | MLB | [MLB fav 1] | [MLB fav 2] | Yankees
 ```
-*Panthers tab is omitted when CAR is in NFL favorites (CAR tab already appears in [NFL favs]).
+*Panthers tab is omitted when CAR is in NFL favorites (the 'CAR' fav tab already covers Panthers stories).
 
 Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`. Panthers tab filters by `story.league === 'Panthers'`.
 

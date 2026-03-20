@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-19 (session 17)
+Last updated: 2026-03-19 (session 18)
 Current phase: 2 — Next.js Web Feed (in progress)
-Current task branch: task/panthers-feed (PR open → dev)
+Current task branch: fix/panthers-feed-order (PR open → dev)
 
 **Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
@@ -44,7 +44,8 @@ Current task branch: task/panthers-feed (PR open → dev)
 - PR #5: `task/espn-scores-overhaul` → `dev` — (URL pending push)
 - PR #6: `task/auth-favorites` → `dev` — https://github.com/masuggs515/sportswire/pull/8
 - PR #7: `task/standings-boxscore` → `dev` — https://github.com/masuggs515/sportswire/pull/9
-- PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10
+- PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10 — MERGED 2026-03-19
+- PR #9: `fix/panthers-feed-order` → `dev` — https://github.com/masuggs515/sportswire/pull/11
 
 ---
 
@@ -61,6 +62,7 @@ Current task branch: task/panthers-feed (PR open → dev)
 - [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
 - [ ] Gemini ai_analysis backfill — quota exhausted on 2026-03-16 (was using deprecated gemini-2.0-flash). Migrated to gemini-2.5-flash-lite-preview-06-17 (1,000 RPD free tier). After quota resets at midnight Pacific Time: (1) run `DELETE FROM stories;` in Supabase SQL Editor, (2) invoke fetch-news manually to re-ingest all articles with ai_analysis populating correctly — raised 2026-03-16
 - [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before story detail standings work — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
+- [ ] One-time cleanup: re-tag existing misclassified Panthers stories — run in Supabase SQL Editor after merging PR #8: `UPDATE stories SET league = 'Panthers', team_tags = CASE WHEN 'Panthers' = ANY(team_tags) THEN team_tags ELSE array_append(team_tags, 'Panthers') END WHERE league = 'NFL' AND 'CAR' = ANY(team_tags);` — raised 2026-03-19
 
 ---
 
@@ -104,6 +106,7 @@ Current task branch: task/panthers-feed (PR open → dev)
 | 2026-03-19 | Auth + Favorites | task/auth-favorites | Optional email+password auth (AuthModal, AuthButton). First-login onboarding overlay (OnboardingOverlay) — pick up to 2 favorite teams per league. Favorite teams stored in user_preferences JSONB (migration 011). Dynamic feed tabs based on favorites. GameTicker upgraded: compact logo+score cards, favorite-team priority ordering. Settings sheet: Favorite Teams section for logged-in users. Middleware for session refresh. lib/teams.json (92 teams with ESPN logos). |
 | 2026-03-19 | Standings + Box Score | task/standings-boxscore | New /standings page (StandingsClient): NBA/NFL/MLB/NCAAB tabs, Division/Conference/League toggle, ESPN hidden API just-in-time fetch, team logos, per-league stat columns, session-level cache. Inline box score expansion on all game cards (ScoresClient): chevron opens BoxScorePanel, ESPN summary endpoint just-in-time fetch, per-sport stat tables (NBA/NCAAB starters+bench+totals, NFL passing+rushing+receiving+team stats, MLB pitching+batting). NavBar: Standings link added. No Edge Functions, no migrations. |
 | 2026-03-19 | Panthers feed | task/panthers-feed | Added 3 Panthers RSS sources to fetch-news (panthers.com, Panthers Wire, Cat Scratch Reader). Title dedup within each run prevents cross-source duplicates. Panthers tab added to feed after NFL (skipped if CAR in NFL favorites). Specs updated. |
+| 2026-03-19 | Panthers feed + ordering fix | fix/panthers-feed-order | Fixed ordering bug: Panthers loop now runs before the ESPN NFL loop, with all processed guids recorded in seenGuids — NFL loop skips them. Prevents Panthers stories from being double-ingested as league='NFL'. Cleanup SQL provided as TODO MAS to re-tag existing misclassified stories. |
 
 ---
 

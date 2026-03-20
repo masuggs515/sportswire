@@ -4,14 +4,19 @@
  * Triggered by Supabase Cron at :15 and :45 past every hour.
  *
  * Logic:
- *  1. Fetch ESPN RSS for NBA, NFL, and NCAAB
- *  2. Parse XML: extract guid, title, description, link, pubDate, all <category> tags
- *  3. Skip articles already in DB (deduplication on external_id)
- *  4. Layer 1 — RSS category → team_tags: match <category> text against known team
+ *  1. Panthers feeds run FIRST (panthers.com, Panthers Wire, Cat Scratch Reader).
+ *     All inserted/seen guids are recorded in seenGuids so the NFL loop skips them.
+ *     This prevents Panthers stories from being double-ingested as league = 'NFL'.
+ *  2. Fetch ESPN RSS for NBA, NFL, NCAAB, and Yankees.
+ *     NFL loop checks seenGuids before DB lookup — any guid already claimed by
+ *     the Panthers loop is skipped.
+ *  3. Parse XML: extract guid, title, description, link, pubDate, all <category> tags
+ *  4. Skip articles already in DB (deduplication on external_id)
+ *  5. Layer 1 — RSS category → team_tags: match <category> text against known team
  *     names using a league-scoped lookup. No Gemini quota spent for this.
- *  5. Layer 2 — Gemini fills the gaps: always called for ai_summary, ai_analysis,
+ *  6. Layer 2 — Gemini fills the gaps: always called for ai_summary, ai_analysis,
  *     and is_hot. Also provides team_tags when Layer 1 returned zero tags.
- *  6. Upsert story to `stories` table
+ *  7. Upsert story to `stories` table
  *
  * BDL requests per run: 0 (ESPN RSS only — no BallDontLie calls)
  */
@@ -24,9 +29,18 @@ const ESPN_RSS: Record<string, string> = {
   NBA:     "https://www.espn.com/espn/rss/nba/news",
   NFL:     "https://www.espn.com/espn/rss/nfl/news",
   NCAAB:   "https://www.espn.com/espn/rss/ncb/news",
-  // Yankees-specific MLB feed — league = 'Yankees', team_tags = ['NYY', 'Yankees']
+  // Yankees-specific MLB feed — league = 'Yankees', team_tags = ['NYY']
   Yankees: "https://www.espn.com/mlb/rss/news?id=10",
 };
+
+// ─── Panthers RSS feeds (three sources, title-deduped per run) ────────────────
+// Processed BEFORE the ESPN_RSS loop so their guids are claimed first.
+// This prevents the NFL ESPN feed from re-ingesting the same story as league='NFL'.
+const PANTHERS_FEEDS = [
+  "https://www.panthers.com/rss/news",
+  "https://pantherswire.usatoday.com/feed/",
+  "https://www.catscratchreader.com/rss/current",
+];
 
 // ─── Gemini Flash endpoint ────────────────────────────────────────────────────
 // gemini-2.0-flash deprecated 2026-03-03, retires 2026-09. Using Flash-Lite preview
@@ -230,6 +244,137 @@ serve(async () => {
   let skipped    = 0;
   let rssTagHits = 0; // articles where Layer 1 supplied all tags
 
+  // Guids claimed by the Panthers loop. The ESPN NFL loop checks this set and
+  // skips any guid already processed here, preventing a Panthers story from being
+  // inserted a second time with league = 'NFL'.
+  const seenGuids = new Set<string>();
+
+  // ─── Panthers feeds (run FIRST — claims guids before the NFL ESPN loop) ─────
+  // team_tags always hardcoded: ['CAR', 'Panthers'] — no lookup needed.
+  // Title deduplication prevents the same story from multiple sources being
+  // inserted more than once per run (guid-based dedup handles repeat runs).
+  const seenPanthersTitles = new Set<string>();
+
+  for (const feedUrl of PANTHERS_FEEDS) {
+    let panXml: string;
+    try {
+      const res = await fetch(feedUrl);
+      if (!res.ok) {
+        console.error(`[fetch-news] Panthers RSS ${feedUrl} returned ${res.status}`);
+        continue;
+      }
+      panXml = await res.text();
+    } catch (err) {
+      console.error(`[fetch-news] Failed to fetch Panthers RSS ${feedUrl}:`, err.message);
+      continue;
+    }
+
+    const panItems = panXml.match(/<item>([\s\S]*?)<\/item>/g) ?? [];
+    console.log(`[fetch-news] Panthers (${feedUrl}): ${panItems.length} items in feed`);
+
+    for (const item of panItems) {
+      const guid        = getTagValue(item, "guid");
+      const headline    = getTagValue(item, "title");
+      const description = getTagValue(item, "description");
+      const link        = getTagValue(item, "link");
+      const pubDate     = getTagValue(item, "pubDate");
+
+      if (!guid || !headline) continue;
+
+      // Title dedup across all three Panthers feeds within this run
+      const normalizedTitle = headline.trim().toLowerCase();
+      if (seenPanthersTitles.has(normalizedTitle)) {
+        skipped++;
+        continue;
+      }
+      seenPanthersTitles.add(normalizedTitle);
+
+      // Claim this guid so the NFL loop skips it regardless of outcome below
+      seenGuids.add(guid);
+
+      // DB dedup — story already ingested from a previous run
+      const { data: exists } = await supabase
+        .from("stories")
+        .select("id")
+        .eq("external_id", guid)
+        .maybeSingle();
+
+      if (exists) {
+        skipped++;
+        continue;
+      }
+
+      // Panthers team_tags are always hardcoded
+      const finalTeamTags = ["CAR", "Panthers"];
+
+      // Gemini for summary / analysis / is_hot (identical prompt to other leagues)
+      const geminiPayload = {
+        contents: [{
+          parts: [{
+            text: `You are a sports analyst. Return ONLY valid JSON, no markdown fences, no other text:
+{
+  "analysis": "3 sentences: (1) immediate team impact, (2) relevant league context with a specific stat, (3) what to watch next",
+  "summary": "1-2 sentence summary for a news card (max 160 chars)",
+  "is_hot": true or false based on significance,
+  "team_tags": ["ABR1", "ABR2"]
+}
+
+League: Panthers
+Headline: ${headline}
+Description: ${description}`,
+          }],
+        }],
+        generationConfig: { maxOutputTokens: 800, temperature: 0.2 },
+      };
+
+      let parsed: Record<string, unknown> = {};
+      try {
+        const geminiRes = await fetch(`${GEMINI_URL}?key=${googleAiKey}`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(geminiPayload),
+        });
+
+        if (geminiRes.ok) {
+          const geminiData = await geminiRes.json();
+          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+          parsed = parseGeminiJson(rawText);
+        } else {
+          console.error(`[fetch-news] Gemini ${geminiRes.status} for Panthers: ${headline}`);
+        }
+      } catch (err) {
+        console.error(`[fetch-news] Gemini call failed for Panthers: ${headline}`, err.message);
+      }
+
+      if (!link) {
+        console.warn(`[fetch-news] Skipping Panthers article with no link: ${headline}`);
+        continue;
+      }
+
+      const { error: upsertError } = await supabase.from("stories").insert({
+        external_id:  guid,
+        league:       "Panthers",
+        team_tags:    finalTeamTags,
+        headline,
+        rss_summary:  description || null,
+        ai_summary:   typeof parsed.summary === "string"
+                        ? (parsed.summary as string).slice(0, 160)
+                        : description?.slice(0, 160) ?? null,
+        ai_analysis:  typeof parsed.analysis === "string" ? parsed.analysis : null,
+        article_url:  link,
+        published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+        is_hot:       parsed.is_hot === true,
+      });
+
+      if (upsertError) {
+        console.error(`[fetch-news] Insert failed for Panthers ${guid}:`, upsertError.message);
+      } else {
+        inserted++;
+      }
+    }
+  }
+
+  // ─── ESPN RSS feeds (NBA / NFL / NCAAB / Yankees) ─────────────────────────
   for (const [league, feedUrl] of Object.entries(ESPN_RSS)) {
     let xml: string;
     try {
@@ -256,6 +401,13 @@ serve(async () => {
       const categories  = getAllTagValues(item, "category");
 
       if (!guid || !headline) continue;
+
+      // Skip guids already claimed by the Panthers loop — these stories were
+      // ingested with league = 'Panthers' and must not be re-inserted as 'NFL'.
+      if (seenGuids.has(guid)) {
+        skipped++;
+        continue;
+      }
 
       // Deduplication: skip if already in DB
       const { data: exists } = await supabase
@@ -346,130 +498,6 @@ Description: ${description}`,
 
       if (upsertError) {
         console.error(`[fetch-news] Insert failed for ${guid}:`, upsertError.message);
-      } else {
-        inserted++;
-      }
-    }
-  }
-
-  // ─── Panthers feeds (3 sources, title-deduped within this run) ─────────────
-  // team_tags always hardcoded: ['CAR', 'Panthers'] — no lookup needed.
-  // Title deduplication prevents the same story from multiple sources being
-  // inserted more than once per run (guid-based dedup handles repeat runs).
-  const seenPanthersTitles = new Set<string>();
-
-  for (const feedUrl of PANTHERS_FEEDS) {
-    let panXml: string;
-    try {
-      const res = await fetch(feedUrl);
-      if (!res.ok) {
-        console.error(`[fetch-news] Panthers RSS ${feedUrl} returned ${res.status}`);
-        continue;
-      }
-      panXml = await res.text();
-    } catch (err) {
-      console.error(`[fetch-news] Failed to fetch Panthers RSS ${feedUrl}:`, err.message);
-      continue;
-    }
-
-    const panItems = panXml.match(/<item>([\s\S]*?)<\/item>/g) ?? [];
-    console.log(`[fetch-news] Panthers (${feedUrl}): ${panItems.length} items in feed`);
-
-    for (const item of panItems) {
-      const guid        = getTagValue(item, "guid");
-      const headline    = getTagValue(item, "title");
-      const description = getTagValue(item, "description");
-      const link        = getTagValue(item, "link");
-      const pubDate     = getTagValue(item, "pubDate");
-
-      if (!guid || !headline) continue;
-
-      // Title dedup across all three Panthers feeds within this run
-      const normalizedTitle = headline.trim().toLowerCase();
-      if (seenPanthersTitles.has(normalizedTitle)) {
-        skipped++;
-        continue;
-      }
-
-      // External_id dedup against DB
-      const { data: exists } = await supabase
-        .from("stories")
-        .select("id")
-        .eq("external_id", guid)
-        .maybeSingle();
-
-      if (exists) {
-        skipped++;
-        seenPanthersTitles.add(normalizedTitle);
-        continue;
-      }
-
-      seenPanthersTitles.add(normalizedTitle);
-
-      // Panthers team_tags are always hardcoded
-      const finalTeamTags = ["CAR", "Panthers"];
-
-      // Gemini for summary / analysis / is_hot (identical to other leagues)
-      const geminiPayload = {
-        contents: [{
-          parts: [{
-            text: `You are a sports analyst. Return ONLY valid JSON, no markdown fences, no other text:
-{
-  "analysis": "3 sentences: (1) immediate team impact, (2) relevant league context with a specific stat, (3) what to watch next",
-  "summary": "1-2 sentence summary for a news card (max 160 chars)",
-  "is_hot": true or false based on significance,
-  "team_tags": ["ABR1", "ABR2"]
-}
-
-League: Panthers
-Headline: ${headline}
-Description: ${description}`,
-          }],
-        }],
-        generationConfig: { maxOutputTokens: 800, temperature: 0.2 },
-      };
-
-      let parsed: Record<string, unknown> = {};
-      try {
-        const geminiRes = await fetch(`${GEMINI_URL}?key=${googleAiKey}`, {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify(geminiPayload),
-        });
-
-        if (geminiRes.ok) {
-          const geminiData = await geminiRes.json();
-          const rawText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
-          parsed = parseGeminiJson(rawText);
-        } else {
-          console.error(`[fetch-news] Gemini ${geminiRes.status} for Panthers: ${headline}`);
-        }
-      } catch (err) {
-        console.error(`[fetch-news] Gemini call failed for Panthers: ${headline}`, err.message);
-      }
-
-      if (!link) {
-        console.warn(`[fetch-news] Skipping Panthers article with no link: ${headline}`);
-        continue;
-      }
-
-      const { error: upsertError } = await supabase.from("stories").insert({
-        external_id:  guid,
-        league:       "Panthers",
-        team_tags:    finalTeamTags,
-        headline,
-        rss_summary:  description || null,
-        ai_summary:   typeof parsed.summary === "string"
-                        ? (parsed.summary as string).slice(0, 160)
-                        : description?.slice(0, 160) ?? null,
-        ai_analysis:  typeof parsed.analysis === "string" ? parsed.analysis : null,
-        article_url:  link,
-        published_at: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-        is_hot:       parsed.is_hot === true,
-      });
-
-      if (upsertError) {
-        console.error(`[fetch-news] Insert failed for Panthers ${guid}:`, upsertError.message);
       } else {
         inserted++;
       }
