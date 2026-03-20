@@ -47,7 +47,7 @@ Current task branch: task/oregon-cfb-feed (PR open → dev)
 - PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10 — MERGED 2026-03-19
 - PR #9: `fix/panthers-feed-order` → `dev` — https://github.com/masuggs515/sportswire/pull/11
 - PR #10: `fix/feed-tag-architecture` → `dev` — https://github.com/masuggs515/sportswire/pull/12
-- PR #11: `task/oregon-cfb-feed` → `dev` — (URL pending push)
+- PR #11: `task/oregon-cfb-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/13
 
 ---
 
