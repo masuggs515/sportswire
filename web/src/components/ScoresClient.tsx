@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Game, GameCompetitor, GameDetails } from '@/lib/types'
+import BoxScorePanel from './BoxScorePanel'
 import { getTeam } from '@/lib/teamConfig'
 import { createClient } from '@/lib/supabase/client'
 
@@ -424,6 +425,7 @@ function SeasonBadge({ seasonType }: { seasonType: number | null | undefined }) 
 // ─── GameCard ────────────────────────────────────────────────────────────────
 
 function GameCard({ game }: { game: Game }) {
+  const [boxScoreOpen, setBoxScoreOpen] = useState(false)
   const isLive = game.status === 'in_progress'
   const isFinal = game.status === 'final'
   const isScheduled = game.status === 'scheduled'
@@ -455,7 +457,8 @@ function GameCard({ game }: { game: Game }) {
     (homeComp.linescores.length > 0 || awayComp.linescores.length > 0)
 
   return (
-    <div className={`bg-gray-900 border rounded-xl p-4 ${isLive ? 'border-green-500/40' : 'border-gray-800'}`}>
+    <div className={`bg-gray-900 border rounded-xl overflow-hidden ${isLive ? 'border-green-500/40' : 'border-gray-800'}`}>
+      <div className="p-4">
       {/* Status row */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -469,18 +472,33 @@ function GameCard({ game }: { game: Game }) {
             <span className="text-xs text-gray-600">{game.broadcast}</span>
           )}
         </div>
-        {isLive && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
-            <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-            {statusDisplay}
-          </span>
-        )}
-        {isFinal && (
-          <span className="text-xs font-semibold text-gray-500">FINAL</span>
-        )}
-        {isScheduled && (
-          <span className="text-xs text-gray-400">{formatTime(game.game_time)}</span>
-        )}
+        <div className="flex items-center gap-3">
+          {isLive && (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
+              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+              {statusDisplay}
+            </span>
+          )}
+          {isFinal && (
+            <span className="text-xs font-semibold text-gray-500">FINAL</span>
+          )}
+          {isScheduled && (
+            <span className="text-xs text-gray-400">{formatTime(game.game_time)}</span>
+          )}
+          {/* Box score chevron */}
+          <button
+            onClick={() => setBoxScoreOpen(o => !o)}
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+            aria-label={boxScoreOpen ? 'Collapse box score' : 'Expand box score'}
+          >
+            <svg
+              className={`w-4 h-4 transition-transform duration-200 ${boxScoreOpen ? 'rotate-180' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Teams */}
@@ -538,6 +556,12 @@ function GameCard({ game }: { game: Game }) {
       {/* Leaders / top performers */}
       {details && (
         <Leaders game={game} details={details} />
+      )}
+      </div>{/* end p-4 */}
+
+      {/* Inline box score panel */}
+      {boxScoreOpen && (
+        <BoxScorePanel game={game} onClose={() => setBoxScoreOpen(false)} />
       )}
     </div>
   )

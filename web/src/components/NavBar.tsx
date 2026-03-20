@@ -34,6 +34,7 @@ export default function NavBar() {
 
           {navLink('/', 'Feed')}
           {navLink('/scores', 'Scores')}
+          {navLink('/standings', 'Standings')}
 
           <div className="ml-auto flex items-center gap-3">
             <AuthButton onOpenSettings={() => setSettingsOpen(true)} />

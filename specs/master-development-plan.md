@@ -81,6 +81,9 @@ Definition of Done:
 - [x] MLB tab on /scores page
 - [x] Yankees RSS news feed (league='Yankees') + Yankees tab on feed page
 - [x] Score cards: ESPN team logos, linescores, leaders, MLB situation, MLB pitching lines
+- [x] Standings page (/standings): league tabs, Division/Conference/League toggle, ESPN just-in-time client fetch
+- [x] Box score expansion on game cards: chevron, BoxScorePanel, per-sport stat tables, ESPN summary API
+- [x] NavBar: Standings link
 - [ ] vercel.json configured — deploy to Vercel (TODO MAS)
 - [ ] Mixpanel events (TODO MAS — add mixpanel-browser)
 

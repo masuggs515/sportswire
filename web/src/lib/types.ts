@@ -137,6 +137,76 @@ export interface FavoriteTeam {
   abbr: string
 }
 
+// ── ESPN Summary / Box Score (fetched client-side, just-in-time) ──────────────
+
+export interface EspnBoxAthlete {
+  athlete: {
+    id: string
+    displayName: string
+    shortName?: string
+    headshot?: { href: string }
+    jersey?: string
+    position?: { abbreviation: string }
+  }
+  starter?: boolean
+  stats: string[]
+  active?: boolean
+  didNotPlay?: boolean
+}
+
+export interface EspnStatGroup {
+  type?: { abbreviation: string; name: string }
+  names: string[]
+  athletes: EspnBoxAthlete[]
+  totals?: string[]
+}
+
+export interface EspnBoxTeamStats {
+  team: { abbreviation: string; displayName: string }
+  statistics: Array<{ name: string; displayValue: string }>
+}
+
+export interface EspnBoxPlayer {
+  team: { abbreviation: string; displayName: string; color?: string }
+  statistics: EspnStatGroup[]
+}
+
+export interface EspnBoxScore {
+  teams?: EspnBoxTeamStats[]
+  players?: EspnBoxPlayer[]
+}
+
+export interface EspnSummaryResponse {
+  boxscore?: EspnBoxScore
+}
+
+// ── ESPN Standings (fetched client-side, just-in-time) ───────────────────────
+
+export interface EspnStandingEntry {
+  team: {
+    id: string
+    displayName: string
+    abbreviation: string
+    logos: Array<{ href: string }>
+    color: string
+    alternateColor?: string
+  }
+  note?: { color: string; text: string }
+  stats: Array<{ name: string; displayValue: string; value?: number }>
+}
+
+export interface EspnStandingGroup {
+  name: string
+  entries: EspnStandingEntry[]
+}
+
+export interface EspnStandingConference {
+  name: string
+  divisions: EspnStandingGroup[]
+}
+
+export type StandingsView = 'Division' | 'Conference' | 'League'
+
 export interface StoryDetail {
   story: Story
   recentGames: Game[]

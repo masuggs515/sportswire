@@ -59,19 +59,23 @@ web/
       globals.css                # Tailwind directives + global styles
       scores/
         page.tsx                 # Scores page — yesterday through next 3 days, revalidate 30s
+      standings/
+        page.tsx                 # Standings page — server component wrapping StandingsClient
       story/
         [id]/
           page.tsx               # Story detail page — calls get-story-detail edge fn
 
     components/
-      NavBar.tsx                 # Sticky header with Feed/Scores nav + settings + AuthButton
+      NavBar.tsx                 # Sticky header with Feed/Scores/Standings nav + settings + AuthButton
       FeedClient.tsx             # Feed client: tabs, realtime, sorting, favorites
       StoryCard.tsx              # Tweet-like story card
       GameTicker.tsx             # Horizontal scroll: live → fav games → finals → upcoming
       StoryDetailClient.tsx      # Full story view (client)
       TeamBadge.tsx              # Coloured team abbreviation chip
       SettingsSheet.tsx          # Slide-out settings: Favorite Teams (auth) + Follow Teams (localStorage)
-      ScoresClient.tsx           # Scores page client: sections, league tabs, realtime
+      ScoresClient.tsx           # Scores page client: sections, league tabs, realtime, box score expansion
+      BoxScorePanel.tsx          # Inline box score panel: NBA/NFL/MLB/NCAAB — fetched just-in-time from ESPN summary API
+      StandingsClient.tsx        # Standings page client: league tabs, Division/Conference/League toggle, ESPN just-in-time fetch
       AuthModal.tsx              # Email+password sign in / sign up modal (no page redirect)
       AuthButton.tsx             # NavBar auth widget: "Sign in" button or avatar dropdown
       OnboardingOverlay.tsx      # First-login full-screen team picker (max 2 per league)
@@ -403,6 +407,93 @@ export interface FavoriteTeam {
 
 ---
 
+## Standings Page (`/standings`)
+
+No server-side data fetch. `StandingsClient` handles everything client-side.
+
+### League tabs
+NBA | NFL | MLB | NCAAB — top of page, sticky below NavBar.
+
+### View toggle
+Division | Conference | League — pill buttons below league tabs.
+- **Division**: one table per division group (e.g. Atlantic, Central, Pacific within East/West conf)
+- **Conference**: one table per conference, teams sorted by win% within conference
+- **League**: single table, all teams sorted by win%
+
+### ESPN standings endpoints (just-in-time, client-side fetch)
+```
+NBA:   https://site.api.espn.com/apis/v2/sports/basketball/nba/standings
+NFL:   https://site.api.espn.com/apis/v2/sports/football/nfl/standings
+MLB:   https://site.api.espn.com/apis/v2/sports/baseball/mlb/standings
+NCAAB: https://site.api.espn.com/apis/v2/sports/basketball/mens-college-basketball/standings
+```
+Response: `{ children: [{ name: "Eastern Conference", children: [{ name: "Atlantic", standings: { entries: [...] } }] }] }`
+For NCAAB, `conf.children` may be absent (conferences as top-level children with flat `standings.entries`).
+
+### Caching
+Simple in-memory `useRef` Map. Switching league tabs does not re-fetch if data is cached in the current session.
+
+### Columns per league
+- **NBA/MLB**: W | L | PCT | GB | Home | Away | Strk
+- **NFL**: W | L | T | PCT | Home | Away | Div | Strk
+- **NCAAB**: W | L | PCT | Home | Away | Conf | Strk
+
+### Table
+Team logo (28px, ESPN CDN) + full name + clinch note. Monospace stat columns. Horizontally scrollable on mobile. Team name sticky left.
+
+---
+
+## Box Score Panel
+
+Inline expandable panel on every game card in `/scores`. No page navigation.
+
+### Trigger
+Chevron icon (▾) in the status row of each game card. Rotates 180° when open. Click again to close.
+
+### Data source
+ESPN summary endpoint (just-in-time, client-side):
+```
+https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/summary?event={external_id}
+```
+Sport/league mapping: NBA→basketball/nba, NFL→football/nfl, MLB→baseball/mlb, NCAAB→basketball/mens-college-basketball.
+`game.external_id` is the ESPN event ID (stored by fetch-nba/nfl/mlb/ncaab-scores Edge Functions).
+
+### Per-sport layout
+**NBA**: Two team sections (starters / bench divider / DNP row / team totals). Columns: MIN FG 3PT FT REB AST STL BLK TO PTS.
+**NCAAB**: Same as NBA. Columns: MIN FG 3PT FT REB AST TO PTS.
+**NFL**: Passing / Rushing / Receiving tables (both teams interleaved with team-header rows) + Team Stats table (Total Yards, Turnovers, Poss. Time, 3rd Down, Red Zone).
+**MLB**: Pitching section (both teams) + Batting section (per team). Pitching columns: IP H R ER BB K ERA. Batting columns: AB R H RBI BB K AVG.
+
+### Styling
+- Panel appears below game card content, separated by a border
+- Horizontally scrollable stat tables (mobile-safe)
+- Player headshots 24px where available, gray circle fallback
+- Monospace font for all stat numbers
+- Player name sticky-left in each table
+- "Game hasn't started yet" message for scheduled games with no box score
+
+---
+
+## lib/types.ts — ESPN types
+
+```typescript
+// Box score
+EspnBoxAthlete      // athlete + stats array from ESPN players response
+EspnStatGroup       // names[] + athletes[] + totals[] per stat type
+EspnBoxTeamStats    // team-level statistics (NFL team stats)
+EspnBoxPlayer       // one team's stat groups within boxscore.players[]
+EspnBoxScore        // { teams?, players? }
+EspnSummaryResponse // { boxscore? }
+
+// Standings
+EspnStandingEntry   // team + stats[] from ESPN standings entries
+EspnStandingGroup   // { name, entries } (a division or conference)
+EspnStandingConference // { name, divisions[] }
+StandingsView       // 'Division' | 'Conference' | 'League'
+```
+
+---
+
 ## Deliverable Checklist
 
 - [x] Feed page showing stories from Supabase
@@ -430,6 +521,11 @@ export interface FavoriteTeam {
 - [x] Settings sheet: Favorite Teams section (logged-in only) + Follow Teams (all)
 - [x] GameTicker: compact logo+score cards, fav-team priority, fav star indicator
 - [x] Middleware: Supabase session refresh
+- [x] Standings page (/standings): NBA/NFL/MLB/NCAAB tabs, Division/Conference/League toggle
+- [x] Standings table: ESPN just-in-time fetch, team logos, monospace stats, sticky team name, per-league columns
+- [x] Box score chevron on all game cards (ScoresClient)
+- [x] BoxScorePanel: NBA/NCAAB player tables (starters/bench/totals), NFL passing/rushing/receiving/team stats, MLB pitching+batting
+- [x] NavBar: Standings link added alongside Feed + Scores
 - [ ] Mixpanel events (TODO MAS — see above)
 - [ ] Disable email confirmations in Supabase Auth settings (TODO MAS — manual dashboard action)
 
