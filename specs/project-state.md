@@ -43,7 +43,7 @@ Current task branch: task/standings-boxscore (PR open → dev)
 - PR #4: `task/ncaab-scores-espn` → `dev` — (URL pending push)
 - PR #5: `task/espn-scores-overhaul` → `dev` — (URL pending push)
 - PR #6: `task/auth-favorites` → `dev` — https://github.com/masuggs515/sportswire/pull/8
-- PR #7: `task/standings-boxscore` → `dev` — (URL pending push)
+- PR #7: `task/standings-boxscore` → `dev` — https://github.com/masuggs515/sportswire/pull/9
 
 ---
 
