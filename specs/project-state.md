@@ -46,7 +46,7 @@ Current task branch: fix/feed-tag-architecture (PR open → dev)
 - PR #7: `task/standings-boxscore` → `dev` — https://github.com/masuggs515/sportswire/pull/9
 - PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10 — MERGED 2026-03-19
 - PR #9: `fix/panthers-feed-order` → `dev` — https://github.com/masuggs515/sportswire/pull/11
-- PR #10: `fix/feed-tag-architecture` → `dev` — (URL pending push)
+- PR #10: `fix/feed-tag-architecture` → `dev` — https://github.com/masuggs515/sportswire/pull/12
 
 ---
 
