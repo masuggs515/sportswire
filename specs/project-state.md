@@ -44,7 +44,7 @@ Current task branch: task/panthers-feed (PR open → dev)
 - PR #5: `task/espn-scores-overhaul` → `dev` — (URL pending push)
 - PR #6: `task/auth-favorites` → `dev` — https://github.com/masuggs515/sportswire/pull/8
 - PR #7: `task/standings-boxscore` → `dev` — https://github.com/masuggs515/sportswire/pull/9
-- PR #8: `task/panthers-feed` → `dev` — (URL pending push)
+- PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10
 
 ---
 
