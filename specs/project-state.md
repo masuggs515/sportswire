@@ -42,7 +42,7 @@ Current task branch: task/auth-favorites (PR open → dev)
 - PR #3: `task/phase2-nextjs-web` → `dev` — MERGED 2026-03-19
 - PR #4: `task/ncaab-scores-espn` → `dev` — (URL pending push)
 - PR #5: `task/espn-scores-overhaul` → `dev` — (URL pending push)
-- PR #6: `task/auth-favorites` → `dev` — (URL pending push)
+- PR #6: `task/auth-favorites` → `dev` — https://github.com/masuggs515/sportswire/pull/8
 
 ---
 
@@ -53,7 +53,7 @@ Current task branch: task/auth-favorites (PR open → dev)
 - [ ] Vercel deployment — create Vercel project, import GitHub repo, set rootDirectory=web in Vercel dashboard settings, add env vars from web/.env.local — raised 2026-03-18
 - [ ] Review and merge PR #4 (task/ncaab-scores-espn → dev) — (URL pending push) — raised 2026-03-19
 - [ ] Review and merge PR #5 (task/espn-scores-overhaul → dev) — (URL pending push) — raised 2026-03-19
-- [ ] Review and merge PR #6 (task/auth-favorites → dev) — (URL pending push) — raised 2026-03-19
+- [ ] Review and merge PR #6 (task/auth-favorites → dev) — https://github.com/masuggs515/sportswire/pull/8 — raised 2026-03-19
 - [ ] Disable "Enable email confirmations" in Supabase Auth settings (Dashboard → Authentication → Providers → Email) — required for email+password login to work without confirmation flow — raised 2026-03-19
 - [x] Run SQL for migrations 009 + 010 — applied via supabase db push --linked — completed 2026-03-19
 - [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
