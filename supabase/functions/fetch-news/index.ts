@@ -178,6 +178,13 @@ const LEAGUE_LOOKUP: Record<string, Record<string, string[]>> = {
   Yankees: YANKEES_TEAM_LOOKUP,
 };
 
+// ─── Panthers RSS feeds (three sources, title-deduped per run) ────────────────
+const PANTHERS_FEEDS = [
+  "https://www.panthers.com/rss/news",
+  "https://pantherswire.usatoday.com/feed/",
+  "https://www.catscratchreader.com/rss/current",
+];
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
