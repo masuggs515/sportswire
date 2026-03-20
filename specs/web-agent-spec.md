@@ -175,7 +175,7 @@ All | NBA | [NBA fav 1] | [NBA fav 2] | NFL | [NFL fav 1] | [NFL fav 2] | Panthe
 ```
 *Panthers tab is omitted when CAR is in NFL favorites (the 'CAR' fav tab already covers Panthers stories).
 
-Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`. Panthers tab filters by `story.league === 'Panthers'`.
+Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`. Panthers tab filters by `story.team_tags.includes('CAR') || story.team_tags.includes('Panthers')`. Yankees tab filters by `story.team_tags.includes('NYY') || story.team_tags.includes('Yankees')`. NBA/NFL/NCAAB/MLB tabs filter by `story.league === tab`.
 
 `page.tsx` fetches `user_preferences.favorite_teams` server-side (if user is logged in) and passes as `initialFavorites` prop. Client re-fetches on `favorites-changed` event (dispatched when SettingsSheet saves).
 

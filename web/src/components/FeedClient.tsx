@@ -7,8 +7,8 @@ import GameTicker from './GameTicker'
 import { getFollowedTeams } from './SettingsSheet'
 import { createClient } from '@/lib/supabase/client'
 
-// Static league tabs always present (in insertion-order position)
-const STATIC_LEAGUES = ['NBA', 'NFL', 'Panthers', 'NCAAB', 'MLB', 'Yankees'] as const
+// Tabs that filter by story.league value
+const LEAGUE_TABS = ['NBA', 'NFL', 'NCAAB', 'MLB'] as const
 
 interface FeedClientProps {
   initialStories: Story[]
@@ -109,8 +109,16 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
   // Filter stories for the effective tab
   const filteredStories = useMemo(() => {
     if (effectiveTab === 'All') return stories
-    if ((STATIC_LEAGUES as readonly string[]).includes(effectiveTab)) {
+    if ((LEAGUE_TABS as readonly string[]).includes(effectiveTab)) {
       return stories.filter(s => s.league === effectiveTab)
+    }
+    // Panthers tab — NFL stories tagged CAR or Panthers
+    if (effectiveTab === 'Panthers') {
+      return stories.filter(s => s.team_tags.includes('CAR') || s.team_tags.includes('Panthers'))
+    }
+    // Yankees tab — MLB stories tagged NYY or Yankees
+    if (effectiveTab === 'Yankees') {
+      return stories.filter(s => s.team_tags.includes('NYY') || s.team_tags.includes('Yankees'))
     }
     // Favorite team tab — filter by team_tags
     return stories.filter(s => s.team_tags.includes(effectiveTab))
