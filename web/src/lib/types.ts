@@ -130,6 +130,13 @@ export interface Team {
   updated_at: string
 }
 
+export interface FavoriteTeam {
+  league: 'NFL' | 'NBA' | 'MLB'
+  espnId: number
+  name: string
+  abbr: string
+}
+
 export interface StoryDetail {
   story: Story
   recentGames: Game[]

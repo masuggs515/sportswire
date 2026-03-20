@@ -64,21 +64,27 @@ web/
           page.tsx               # Story detail page — calls get-story-detail edge fn
 
     components/
-      NavBar.tsx                 # Sticky header with Feed/Scores nav + settings button
-      FeedClient.tsx             # Feed client: tabs, realtime, sorting
+      NavBar.tsx                 # Sticky header with Feed/Scores nav + settings + AuthButton
+      FeedClient.tsx             # Feed client: tabs, realtime, sorting, favorites
       StoryCard.tsx              # Tweet-like story card
-      GameTicker.tsx             # Horizontal scroll: live games → upcoming → recent
+      GameTicker.tsx             # Horizontal scroll: live → fav games → finals → upcoming
       StoryDetailClient.tsx      # Full story view (client)
       TeamBadge.tsx              # Coloured team abbreviation chip
-      SettingsSheet.tsx          # Slide-out settings panel with team picker
+      SettingsSheet.tsx          # Slide-out settings: Favorite Teams (auth) + Follow Teams (localStorage)
       ScoresClient.tsx           # Scores page client: sections, league tabs, realtime
+      AuthModal.tsx              # Email+password sign in / sign up modal (no page redirect)
+      AuthButton.tsx             # NavBar auth widget: "Sign in" button or avatar dropdown
+      OnboardingOverlay.tsx      # First-login full-screen team picker (max 2 per league)
 
     lib/
-      types.ts                   # TypeScript interfaces: Story, Game, Standing, Team, StoryDetail
+      types.ts                   # TypeScript interfaces: Story, Game, Standing, Team, StoryDetail, FavoriteTeam
       teamConfig.ts              # All 30 NBA + 32 NFL teams: colors, full names
+      teams.json                 # 92 teams (32 NFL + 30 NBA + 30 MLB) with ESPN logos + espnId
       supabase/
         client.ts                # createBrowserClient — for client components
         server.ts                # createServerClient — for server components
+
+  middleware.ts                  # Supabase session refresh on every request
 
   .env.local                     # Gitignored — contains Supabase URL + keys
   package.json
@@ -156,11 +162,21 @@ stories.sort((a, b) => {
 ```
 
 ### League tabs
-Five tabs: All / NBA / NFL / NCAAB / Yankees. Filters `stories` array by `league` field client-side.
-Yankees tab shows stories where `league = 'Yankees'` (ingested from ESPN MLB Yankees RSS feed).
+
+**Logged-out:** All / NBA / NFL / NCAAB / MLB / Yankees (static).
+
+**Logged-in:** Dynamic tabs based on `favorite_teams` from `user_preferences`:
+```
+All | NBA | [NBA fav 1] | [NBA fav 2] | NFL | [NFL fav 1] | [NFL fav 2] | NCAAB | MLB | [MLB fav 1] | [MLB fav 2] | Yankees
+```
+Tabs computed via `useMemo` from the `favorites` array. Tab bar is `overflow-x-auto scrollbar-hide`. Favorite team tabs filter by `story.team_tags.includes(abbr)`.
+
+`page.tsx` fetches `user_preferences.favorite_teams` server-side (if user is logged in) and passes as `initialFavorites` prop. Client re-fetches on `favorites-changed` event (dispatched when SettingsSheet saves).
 
 ### Game ticker
 Horizontal scroll of today's games. Supabase Realtime subscribed to `games` table changes for live score updates without polling.
+
+Priority: live → games featuring a favorite team (non-live) → recent finals → upcoming. `FavoriteTeam[]` passed from `FeedClient`.
 
 ---
 
@@ -215,13 +231,44 @@ export function saveFollowedTeams(teams: string[]): void {
 
 ---
 
+## Auth
+
+Optional Supabase email + password auth. No page redirect — modal only.
+
+- **`AuthModal.tsx`**: sign-in / sign-up toggle. `onSuccess(isNewUser: boolean)` callback. Friendly error messages.
+- **`AuthButton.tsx`**: client component, listens to `supabase.auth.onAuthStateChange()`.
+  - Logged-out: "Sign in" text → opens `AuthModal`.
+  - After auth success: if new user OR no `user_preferences` row → show `OnboardingOverlay`. Else → `router.refresh()`.
+  - Logged-in: avatar with initials → dropdown: "Favorite Teams" (opens SettingsSheet) + "Sign out".
+  - After sign-out or onboarding done: `router.refresh()` to re-run server components.
+- NavBar right side: `[AuthButton] [gear icon]`.
+- Email confirmations must be **disabled** in Supabase Auth settings (TODO MAS — requires manual dashboard action).
+
+## Onboarding
+
+**`OnboardingOverlay.tsx`**: Full-screen overlay shown once on first login.
+- NFL / NBA / MLB team grids (4 columns per league) from `lib/teams.json`.
+- Each `TeamCard`: ESPN logo (28px) + team name. Checkmark when selected. Blue border when selected.
+- Max 2 per league — unselected cards disabled (`opacity-40`) when league is at max.
+- Save: upserts `{ user_id, favorite_teams: selections }` to `user_preferences` via Supabase browser client.
+- Skip: upserts `{ user_id, favorite_teams: [] }` (prevents re-trigger on next login).
+- After save/skip: `onDone()` callback → `router.refresh()`.
+- Trigger condition: `user_preferences` row does not exist for the logged-in user.
+
 ## Settings Sheet
 
-Slide-out panel from the right. Opens from the NavBar settings button.
+Slide-out panel from the right. Opens from NavBar gear icon or "Favorite Teams" in avatar dropdown.
 
+**When logged in:**
+- **Favorite Teams** section: NFL / NBA / MLB grids from `lib/teams.json` (4 columns per league).
+  - Up to 2 per league. `atMax` shows "Max 2" label; excess selections show amber warning.
+  - Persisted to `user_preferences.favorite_teams` via Supabase on Save.
+  - Dispatches `favorites-changed` window event so FeedClient re-fetches.
+
+**For all users (localStorage):**
 - NBA team grid (30 teams) — toggle follow/unfollow
 - NFL team grid (32 teams) — toggle follow/unfollow
-- "Save & Close" — persists to localStorage and closes
+- "Save & Close" — persists localStorage + Supabase (if logged in) and closes
 
 ---
 
@@ -313,9 +360,46 @@ Supabase channel subscribed to `games` table changes — score updates without p
 
 ---
 
-## Game Ticker (updated)
+## Game Ticker
 
-Prioritises: LIVE games → upcoming scheduled → recent finals. Shows a "Live Now" / "Upcoming" label. Feed page query window expanded to today + 2 days to catch upcoming games for the ticker.
+Compact cards (`w-32`). Each card: status label, away row (logo 32px + score), home row (logo 32px + score). No team name text — abbreviation fallback only when logo fails.
+
+Priority: live → games featuring a favorite team (non-live) → recent finals → upcoming.
+
+Label: "Live Now" | "Your Teams" | "Recent" | "Upcoming" based on what's showing.
+
+Favorite games get `border-blue-500/30` border + star indicator. `gameFeaturesFavorite()` matches via `details.competitors[n].team.abbreviation`.
+
+Feed page query window: today + 2 days to catch upcoming games.
+
+---
+
+## lib/teams.json
+
+92 teams: 32 NFL, 30 NBA, 30 MLB. Shape per team:
+```typescript
+{ league: 'NFL' | 'NBA' | 'MLB', name: string, abbr: string, espnId: number, logo: string }
+```
+
+ESPN logo URL patterns:
+- NFL: `https://a.espncdn.com/i/teamlogos/nfl/500/{abbr_lower}.png` (Raiders: `oak`)
+- NBA: `https://a.espncdn.com/i/teamlogos/nba/500/{abbr_lower}.png` (notable: GSW→`gs`, NYK→`ny`, NOP→`no`, SAS→`sa`, UTA→`utah`)
+- MLB: `https://a.espncdn.com/i/teamlogos/mlb/500/scoreboard/{abbr_lower}.png`
+
+## lib/types.ts — FavoriteTeam
+
+```typescript
+export interface FavoriteTeam {
+  league: 'NFL' | 'NBA' | 'MLB'
+  espnId: number
+  name: string
+  abbr: string
+}
+```
+
+## Middleware
+
+`web/src/middleware.ts` — refreshes Supabase session on every request. Skips `_next/static`, `_next/image`, `favicon.ico`, and static asset extensions.
 
 ---
 
@@ -323,7 +407,7 @@ Prioritises: LIVE games → upcoming scheduled → recent finals. Shows a "Live 
 
 - [x] Feed page showing stories from Supabase
 - [x] League tabs (All / NBA / NFL / NCAAB) filtering correctly
-- [x] Game ticker: prioritises live → upcoming → recent
+- [x] Game ticker: prioritises live → fav team games → recent → upcoming
 - [x] Story card: team color accent, badges, headline, ai_summary
 - [x] Story detail page assembled from get-story-detail response
 - [x] AI analysis displayed (no loading state — always cached)
@@ -339,7 +423,15 @@ Prioritises: LIVE games → upcoming scheduled → recent finals. Shows a "Live 
 - [x] NavBar: Feed + Scores nav links with active state
 - [x] ESLint clean
 - [x] TypeScript clean
+- [x] Optional email+password auth (AuthModal, AuthButton)
+- [x] First-login onboarding overlay (OnboardingOverlay)
+- [x] Favorite teams: stored in user_preferences, persisted to Supabase
+- [x] Dynamic feed tabs based on favorites (max 2 per league × 3 leagues)
+- [x] Settings sheet: Favorite Teams section (logged-in only) + Follow Teams (all)
+- [x] GameTicker: compact logo+score cards, fav-team priority, fav star indicator
+- [x] Middleware: Supabase session refresh
 - [ ] Mixpanel events (TODO MAS — see above)
+- [ ] Disable email confirmations in Supabase Auth settings (TODO MAS — manual dashboard action)
 
 ---
 

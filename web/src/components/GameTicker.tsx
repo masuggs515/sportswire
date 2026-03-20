@@ -1,17 +1,71 @@
 'use client'
 
-import { Game } from '@/lib/types'
-import { getTeamColor } from '@/lib/teamConfig'
+import { useState } from 'react'
+import Image from 'next/image'
+import { Game, FavoriteTeam } from '@/lib/types'
 
 interface GameTickerProps {
   games: Game[]
+  favorites?: FavoriteTeam[]
 }
 
-function GameCard({ game }: { game: Game }) {
-  const homeColor = getTeamColor(game.home_team, game.league)
-  const awayColor = getTeamColor(game.away_team, game.league)
-  const isFinal = game.status === 'final'
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function getCompetitor(game: Game, side: 'home' | 'away') {
+  return game.details?.competitors.find(c => c.homeAway === side)
+}
+
+function gameFeaturesFavorite(game: Game, favAbbrs: Set<string>): boolean {
+  if (favAbbrs.size === 0) return false
+  const competitors = game.details?.competitors ?? []
+  return competitors.some(c => favAbbrs.has(c.team.abbreviation))
+}
+
+// ─── TeamLogo — compact, 32px ─────────────────────────────────────────────────
+
+function TeamLogo({ logo, abbr, color }: { logo?: string | null; abbr: string; color?: string }) {
+  const [imgError, setImgError] = useState(false)
+
+  if (!logo || imgError) {
+    return (
+      <div
+        className="w-8 h-8 rounded-sm flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+        style={{ backgroundColor: color || '#374151' }}
+      >
+        {abbr.slice(0, 3)}
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-8 h-8 relative flex-shrink-0">
+      <Image
+        src={logo}
+        alt={abbr}
+        fill
+        className="object-contain"
+        onError={() => setImgError(true)}
+        unoptimized
+      />
+    </div>
+  )
+}
+
+// ─── TickerCard ───────────────────────────────────────────────────────────────
+
+function TickerCard({ game, isFavorite }: { game: Game; isFavorite: boolean }) {
   const isLive = game.status === 'in_progress'
+  const isFinal = game.status === 'final'
+
+  const awayComp = getCompetitor(game, 'away')
+  const homeComp = getCompetitor(game, 'home')
+
+  const awayAbbr = awayComp?.team.abbreviation ?? game.away_team.slice(0, 3).toUpperCase()
+  const homeAbbr = homeComp?.team.abbreviation ?? game.home_team.slice(0, 3).toUpperCase()
+  const awayColor = awayComp?.team.color ? `#${awayComp.team.color}` : undefined
+  const homeColor = homeComp?.team.color ? `#${homeComp.team.color}` : undefined
+
+  const statusDisplay = game.clock ?? game.period ?? 'LIVE'
 
   const timeStr = new Date(game.game_time).toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -19,10 +73,15 @@ function GameCard({ game }: { game: Game }) {
     hour12: true,
   })
 
+  const awayWins = isFinal && game.away_score > game.home_score
+  const homeWins = isFinal && game.home_score > game.away_score
+
   return (
-    <div className={`flex-shrink-0 rounded-xl p-3 w-40 border ${
+    <div className={`flex-shrink-0 rounded-xl p-3 w-32 border ${
       isLive
         ? 'bg-gray-900 border-green-500/40'
+        : isFavorite
+        ? 'bg-gray-900 border-blue-500/30'
         : 'bg-gray-900 border-gray-800'
     }`}>
       {/* Status */}
@@ -30,7 +89,7 @@ function GameCard({ game }: { game: Game }) {
         {isLive ? (
           <span className="flex items-center justify-center gap-1 text-xs text-green-400 font-semibold">
             <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-            {game.period ?? 'LIVE'}
+            {statusDisplay}
           </span>
         ) : isFinal ? (
           <span className="text-xs text-gray-500 font-semibold">FINAL</span>
@@ -39,45 +98,55 @@ function GameCard({ game }: { game: Game }) {
         )}
       </div>
 
-      {/* Away team */}
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: awayColor }} />
-          <span className="text-sm font-semibold text-white">{game.away_team}</span>
-        </div>
+      {/* Away row: logo + score */}
+      <div className="flex items-center justify-between mb-1.5">
+        <TeamLogo logo={awayComp?.team.logo} abbr={awayAbbr} color={awayColor} />
         {(isLive || isFinal) && (
-          <span className="text-sm font-bold text-white">{game.away_score}</span>
+          <span className={`text-sm tabular-nums ml-2 ${awayWins ? 'font-bold text-white' : 'font-medium text-gray-300'}`}>
+            {game.away_score}
+          </span>
         )}
       </div>
 
-      {/* Home team */}
+      {/* Home row: logo + score */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: homeColor }} />
-          <span className="text-sm font-semibold text-white">{game.home_team}</span>
-        </div>
+        <TeamLogo logo={homeComp?.team.logo} abbr={homeAbbr} color={homeColor} />
         {(isLive || isFinal) && (
-          <span className="text-sm font-bold text-white">{game.home_score}</span>
+          <span className={`text-sm tabular-nums ml-2 ${homeWins ? 'font-bold text-white' : 'font-medium text-gray-300'}`}>
+            {game.home_score}
+          </span>
         )}
       </div>
 
-      {/* Win probability for upcoming */}
-      {!isLive && !isFinal && game.home_win_prob !== null && (
-        <div className="mt-2 text-xs text-gray-600 text-center">
-          {Math.round(game.home_win_prob * 100)}% {game.home_team}
+      {/* Favorite star */}
+      {isFavorite && !isLive && (
+        <div className="text-center mt-1.5">
+          <span className="text-blue-500 text-xs">★</span>
         </div>
       )}
     </div>
   )
 }
 
-export default function GameTicker({ games }: GameTickerProps) {
-  const live = games.filter(g => g.status === 'in_progress')
-  const upcoming = games.filter(g => g.status === 'scheduled')
-  const finished = games.filter(g => g.status === 'final')
+// ─── GameTicker ───────────────────────────────────────────────────────────────
 
-  // Priority: show live games; if none show upcoming; if none show recent finals
-  const display = live.length > 0 ? live : upcoming.length > 0 ? upcoming : finished
+export default function GameTicker({ games, favorites = [] }: GameTickerProps) {
+  const favAbbrs = new Set(favorites.map(f => f.abbr))
+
+  const live     = games.filter(g => g.status === 'in_progress')
+  const finals   = games.filter(g => g.status === 'final')
+  const upcoming = games.filter(g => g.status === 'scheduled')
+
+  // Priority: 1. live, 2. favorite-team games (non-live), 3. finals, 4. upcoming
+  const nonLive = [...finals, ...upcoming]
+  const favGames    = nonLive.filter(g => gameFeaturesFavorite(g, favAbbrs))
+  const nonFavGames = nonLive.filter(g => !gameFeaturesFavorite(g, favAbbrs))
+
+  const display = [
+    ...live,
+    ...favGames,
+    ...nonFavGames,
+  ]
 
   if (display.length === 0) {
     return (
@@ -87,11 +156,7 @@ export default function GameTicker({ games }: GameTickerProps) {
     )
   }
 
-  const label = live.length > 0
-    ? 'Live Now'
-    : upcoming.length > 0
-    ? 'Upcoming'
-    : 'Recent'
+  const label = live.length > 0 ? 'Live Now' : favGames.length > 0 ? 'Your Teams' : finals.length > 0 ? 'Recent' : 'Upcoming'
 
   return (
     <div>
@@ -103,7 +168,11 @@ export default function GameTicker({ games }: GameTickerProps) {
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-4">
         {display.map(game => (
-          <GameCard key={game.id} game={game} />
+          <TickerCard
+            key={game.id}
+            game={game}
+            isFavorite={gameFeaturesFavorite(game, favAbbrs)}
+          />
         ))}
       </div>
     </div>

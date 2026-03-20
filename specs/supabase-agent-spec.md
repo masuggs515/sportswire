@@ -256,6 +256,7 @@ CREATE TABLE user_preferences (
   device_id        TEXT,
   followed_teams   TEXT[] DEFAULT '{}',
   followed_leagues TEXT[] DEFAULT ARRAY['NBA','NFL'],
+  favorite_teams   JSONB DEFAULT '[]'::jsonb,   -- added migration 011: [{league, espnId, name, abbr}]
   created_at       TIMESTAMPTZ DEFAULT NOW(),
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
@@ -263,6 +264,16 @@ CREATE TABLE user_preferences (
 CREATE UNIQUE INDEX idx_prefs_user   ON user_preferences(user_id)   WHERE user_id IS NOT NULL;
 CREATE UNIQUE INDEX idx_prefs_device ON user_preferences(device_id) WHERE device_id IS NOT NULL;
 ```
+
+`favorite_teams` stores an array of `FavoriteTeam` objects (up to 2 per league × 3 leagues = max 6):
+```json
+[
+  { "league": "NBA", "espnId": 13, "name": "Los Angeles Lakers", "abbr": "LAL" },
+  { "league": "NFL", "espnId": 22, "name": "New York Giants", "abbr": "NYG" }
+]
+```
+
+Existing RLS policy `"Own prefs" FOR ALL` covers `favorite_teams` — no new policy needed.
 
 ---
 
@@ -552,6 +563,8 @@ supabase/
     20260319000007_ncaab_cron.sql           -- adds fetch-ncaab-scores cron job
     20260319000008_ncaab_cron_1min.sql      -- updates NCAAB cron to 1-minute interval
     20260319000009_espn_scores_columns.sql  -- adds clock, broadcast, details columns to games
+    20260319000010_espn_scores_cron.sql     -- unschedules fetch-scores; schedules fetch-nba/nfl/mlb-scores
+    20260319000011_add_favorite_teams.sql   -- adds favorite_teams JSONB column to user_preferences
   functions/
     _shared/
       bdl_client.ts

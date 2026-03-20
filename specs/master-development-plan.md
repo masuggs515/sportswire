@@ -87,17 +87,21 @@ Definition of Done:
 ---
 
 ### Phase 3 — Auth & Preferences
-**Goal:** Optional login, preferences sync across browsers/devices.
+**Goal:** Optional login, favorites + preferences sync across browsers/devices.
 
 Definition of Done:
-- [ ] App works fully without login (localStorage-only preferences)
-- [ ] Optional login via magic link (Supabase Auth)
-- [ ] On login: local preferences pushed to Supabase if no account exists
-- [ ] On login: account preferences pulled to browser if account already exists
-- [ ] user_preferences table populated on login
-- [ ] Followed teams persist across browser sessions (localStorage)
-- [ ] Followed teams sync to new browser after login
-- [ ] Direct `/story/:id` URLs navigate correctly
+- [x] App works fully without login (localStorage-only preferences)
+- [x] Optional email+password auth (modal, no page redirect) — Supabase Auth
+- [x] First-login onboarding overlay: pick up to 2 favorite teams per league (NFL/NBA/MLB)
+- [x] `favorite_teams JSONB` column on `user_preferences` (migration 011)
+- [x] Favorite teams stored in Supabase, fetched server-side on page load
+- [x] Dynamic feed tabs: All | NBA | [fav] | NFL | [fav] | NCAAB | MLB | [fav] | Yankees
+- [x] Favorite teams accessible from Settings sheet (logged-in only)
+- [x] GameTicker: favorite team games surface above other non-live games
+- [x] Session refresh middleware (Next.js middleware)
+- [x] Followed teams persist via localStorage (unchanged)
+- [ ] Disable email confirmations in Supabase Auth settings (TODO MAS — manual dashboard action)
+- [ ] Direct `/story/:id` URLs navigate correctly (untested — verify after Vercel deploy)
 
 ---
 
@@ -176,22 +180,29 @@ mint-street-news/
   web/                              ← Next.js 15 web app (new — added 2026-03-18)
     src/
       app/
-        page.tsx                    ← Feed page (/)
+        page.tsx                    ← Feed page (/) — fetches favorites server-side if logged in
         layout.tsx                  ← Root layout with NavBar
         story/[id]/page.tsx         ← Story detail page
+        scores/page.tsx             ← Scores page
       components/
         NavBar.tsx
-        FeedClient.tsx
+        FeedClient.tsx              ← dynamic tabs from favorites, passes favorites to GameTicker
         StoryCard.tsx
-        GameTicker.tsx
+        GameTicker.tsx              ← compact logo+score cards, fav priority
         StoryDetailClient.tsx
         TeamBadge.tsx
-        SettingsSheet.tsx
+        SettingsSheet.tsx           ← Favorite Teams (auth) + Follow Teams (localStorage)
+        ScoresClient.tsx
+        AuthModal.tsx               ← email+password sign in/up modal
+        AuthButton.tsx              ← NavBar auth widget (sign in / avatar dropdown)
+        OnboardingOverlay.tsx       ← first-login team picker
       lib/
-        types.ts
+        types.ts                    ← includes FavoriteTeam interface
         teamConfig.ts
+        teams.json                  ← 92 teams (NFL/NBA/MLB) with ESPN logo URLs + espnId
         supabase/client.ts
         supabase/server.ts
+      middleware.ts                 ← Supabase session refresh
     .env.local                      ← gitignored
     package.json
 
