@@ -16,6 +16,7 @@ export default function AuthButton({ onOpenSettings }: AuthButtonProps) {
   const [showModal, setShowModal] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [onboardingUserId, setOnboardingUserId] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
 
@@ -45,26 +46,34 @@ export default function AuthButton({ onOpenSettings }: AuthButtonProps) {
   const handleAuthSuccess = async (isNewUser: boolean) => {
     setShowModal(false)
 
+    // Resolve the user once here — avoids a second getUser() call inside OnboardingOverlay
+    // and ensures the session is confirmed before we show the overlay.
+    const supabase = createClient()
+    const { data: { user: u } } = await supabase.auth.getUser()
+
+    if (!u) {
+      // Session not established (e.g. email confirmation still pending) — nothing to write
+      router.refresh()
+      return
+    }
+
     if (isNewUser) {
-      // New signup — always show onboarding
+      setOnboardingUserId(u.id)
       setShowOnboarding(true)
       return
     }
 
-    // Existing user sign-in — check if they've done onboarding
-    const supabase = createClient()
-    const { data: { user: u } } = await supabase.auth.getUser()
-    if (u) {
-      const { data: prefs } = await supabase
-        .from('user_preferences')
-        .select('id')
-        .eq('user_id', u.id)
-        .maybeSingle()
+    // Existing user sign-in — check if they've completed onboarding
+    const { data: prefs } = await supabase
+      .from('user_preferences')
+      .select('id')
+      .eq('user_id', u.id)
+      .maybeSingle()
 
-      if (!prefs) {
-        setShowOnboarding(true)
-        return
-      }
+    if (!prefs) {
+      setOnboardingUserId(u.id)
+      setShowOnboarding(true)
+      return
     }
 
     router.refresh()
@@ -72,6 +81,7 @@ export default function AuthButton({ onOpenSettings }: AuthButtonProps) {
 
   const handleOnboardingDone = () => {
     setShowOnboarding(false)
+    setOnboardingUserId(null)
     router.refresh()
   }
 
@@ -102,7 +112,9 @@ export default function AuthButton({ onOpenSettings }: AuthButtonProps) {
 
   return (
     <>
-      {showOnboarding && <OnboardingOverlay onDone={handleOnboardingDone} />}
+      {showOnboarding && onboardingUserId && (
+        <OnboardingOverlay userId={onboardingUserId} onDone={handleOnboardingDone} />
+      )}
 
       <div className="relative" ref={dropdownRef}>
         <button

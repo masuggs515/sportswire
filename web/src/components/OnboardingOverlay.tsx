@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { FavoriteTeam } from '@/lib/types'
 import teamsData from '@/lib/teams.json'
 
+
 const ALL_TEAMS = teamsData as Array<{
   league: 'NFL' | 'NBA' | 'MLB'
   name: string
@@ -17,6 +18,7 @@ const ALL_TEAMS = teamsData as Array<{
 const LEAGUES: Array<'NFL' | 'NBA' | 'MLB'> = ['NFL', 'NBA', 'MLB']
 
 interface OnboardingOverlayProps {
+  userId: string
   onDone: () => void
 }
 
@@ -73,10 +75,11 @@ function TeamCard({
   )
 }
 
-export default function OnboardingOverlay({ onDone }: OnboardingOverlayProps) {
+export default function OnboardingOverlay({ userId, onDone }: OnboardingOverlayProps) {
   const [favorites, setFavorites] = useState<FavoriteTeam[]>([])
   const [maxWarning, setMaxWarning] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   const toggle = (team: typeof ALL_TEAMS[number]) => {
     const existing = favorites.find(f => f.abbr === team.abbr && f.league === team.league)
@@ -94,28 +97,33 @@ export default function OnboardingOverlay({ onDone }: OnboardingOverlayProps) {
     setFavorites(prev => [...prev, { league: team.league, espnId: team.espnId, name: team.name, abbr: team.abbr }])
   }
 
+  const upsertPrefs = async (favs: FavoriteTeam[]): Promise<boolean> => {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({ user_id: userId, favorite_teams: favs }, { onConflict: 'user_id' })
+    if (error) {
+      console.error('OnboardingOverlay: failed to save user_preferences', error)
+      return false
+    }
+    return true
+  }
+
   const save = async () => {
     setSaving(true)
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('user_preferences').upsert(
-        { user_id: user.id, favorite_teams: favorites },
-        { onConflict: 'user_id' }
-      )
+    setSaveError(false)
+    const ok = await upsertPrefs(favorites)
+    setSaving(false)
+    if (ok) {
+      onDone()
+    } else {
+      setSaveError(true)
     }
-    onDone()
   }
 
   const skip = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('user_preferences').upsert(
-        { user_id: user.id, favorite_teams: [] },
-        { onConflict: 'user_id' }
-      )
-    }
+    // upsert empty favorites so this overlay doesn't show again on next sign-in
+    await upsertPrefs([])
     onDone()
   }
 
@@ -166,6 +174,11 @@ export default function OnboardingOverlay({ onDone }: OnboardingOverlayProps) {
 
       {/* Footer */}
       <div className="px-5 py-4 border-t border-gray-800 flex-shrink-0">
+        {saveError && (
+          <p className="text-red-400 text-sm mb-2 text-center">
+            Something went wrong. Please try again.
+          </p>
+        )}
         <button
           onClick={save}
           disabled={saving}
