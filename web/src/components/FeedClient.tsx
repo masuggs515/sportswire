@@ -8,7 +8,12 @@ import { getFollowedTeams } from './SettingsSheet'
 import { createClient } from '@/lib/supabase/client'
 
 // Tabs that filter by story.league value
-const LEAGUE_TABS = ['NBA', 'NFL', 'NCAAB', 'MLB'] as const
+const LEAGUE_TABS = ['NBA', 'NFL', 'NCAAB', 'CFB', 'MLB'] as const
+
+// CFB tab maps to league 'NCAAF' in the DB
+const LEAGUE_TAB_MAP: Record<string, string> = {
+  CFB: 'NCAAF',
+}
 
 interface FeedClientProps {
   initialStories: Story[]
@@ -82,15 +87,18 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
   }, [])
 
   // Build dynamic tab list based on favorites
-  // Order: All | NBA | [NBA favs] | NFL | [NFL favs] | Panthers (skip if CAR in favs) | NCAAB | MLB | [MLB favs] | Yankees
+  // Order: All | NBA | [NBA favs] | NFL | [NFL favs] | Panthers (skip if CAR in favs) | NCAAB | CFB | Oregon (skip if ORE in favs) | MLB | [MLB favs] | Yankees
   const tabs = useMemo(() => {
-    const hasCARFavorite = favorites.some(f => f.league === 'NFL' && f.abbr === 'CAR')
+    const hasCARFavorite    = favorites.some(f => f.league === 'NFL'   && f.abbr === 'CAR')
+    const hasOregonFavorite = favorites.some(f => f.abbr === 'ORE' || f.name?.toLowerCase().includes('oregon'))
     const result: string[] = ['All', 'NBA']
     favorites.filter(f => f.league === 'NBA').slice(0, 2).forEach(f => result.push(f.abbr))
     result.push('NFL')
     favorites.filter(f => f.league === 'NFL').slice(0, 2).forEach(f => result.push(f.abbr))
     if (!hasCARFavorite) result.push('Panthers')
-    result.push('NCAAB', 'MLB')
+    result.push('NCAAB', 'CFB')
+    if (!hasOregonFavorite) result.push('Oregon')
+    result.push('MLB')
     favorites.filter(f => f.league === 'MLB').slice(0, 2).forEach(f => result.push(f.abbr))
     result.push('Yankees')
     return result
@@ -110,7 +118,8 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
   const filteredStories = useMemo(() => {
     if (effectiveTab === 'All') return stories
     if ((LEAGUE_TABS as readonly string[]).includes(effectiveTab)) {
-      return stories.filter(s => s.league === effectiveTab)
+      const league = LEAGUE_TAB_MAP[effectiveTab] ?? effectiveTab
+      return stories.filter(s => s.league === league)
     }
     // Panthers tab — NFL stories tagged CAR or Panthers
     if (effectiveTab === 'Panthers') {
@@ -119,6 +128,10 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
     // Yankees tab — MLB stories tagged NYY or Yankees
     if (effectiveTab === 'Yankees') {
       return stories.filter(s => s.team_tags.includes('NYY') || s.team_tags.includes('Yankees'))
+    }
+    // Oregon tab — NCAAF stories tagged Oregon or Ducks
+    if (effectiveTab === 'Oregon') {
+      return stories.filter(s => s.team_tags.includes('Oregon') || s.team_tags.includes('Ducks'))
     }
     // Favorite team tab — filter by team_tags
     return stories.filter(s => s.team_tags.includes(effectiveTab))

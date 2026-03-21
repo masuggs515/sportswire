@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-19 (session 18)
+Last updated: 2026-03-20 (session 19)
 Current phase: 2 — Next.js Web Feed (in progress)
-Current task branch: fix/feed-tag-architecture (PR open → dev)
+Current task branch: task/oregon-cfb-feed (PR open → dev)
 
 **Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
@@ -47,6 +47,7 @@ Current task branch: fix/feed-tag-architecture (PR open → dev)
 - PR #8: `task/panthers-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/10 — MERGED 2026-03-19
 - PR #9: `fix/panthers-feed-order` → `dev` — https://github.com/masuggs515/sportswire/pull/11
 - PR #10: `fix/feed-tag-architecture` → `dev` — https://github.com/masuggs515/sportswire/pull/12
+- PR #11: `task/oregon-cfb-feed` → `dev` — https://github.com/masuggs515/sportswire/pull/13
 
 ---
 
@@ -112,6 +113,7 @@ Current task branch: fix/feed-tag-architecture (PR open → dev)
 | 2026-03-19 | Panthers feed | task/panthers-feed | Added 3 Panthers RSS sources to fetch-news (panthers.com, Panthers Wire, Cat Scratch Reader). Title dedup within each run prevents cross-source duplicates. Panthers tab added to feed after NFL (skipped if CAR in NFL favorites). Specs updated. |
 | 2026-03-19 | Panthers feed + ordering fix | fix/panthers-feed-order | Fixed ordering bug: Panthers loop now runs before the ESPN NFL loop, with all processed guids recorded in seenGuids — NFL loop skips them. Prevents Panthers stories from being double-ingested as league='NFL'. Cleanup SQL provided as TODO MAS to re-tag existing misclassified stories. |
 | 2026-03-20 | Feed tag architecture simplification | fix/feed-tag-architecture | Removed separate Panthers/Yankees loops and league='Panthers'/'Yankees' values. All feeds now in single ESPN_RSS loop. Panthers→league='NFL', Yankees→league='MLB'. Panthers/Yankees feed tabs now filter by team_tags instead of league. Added full MLB team lookup. Fixed Gemini model (gemini-2.5-flash-lite) and duplicate PANTHERS_FEEDS const. |
+| 2026-03-20 | Oregon Ducks + CFB feeds | task/oregon-cfb-feed | Added 4 NCAAF RSS sources to fetch-news (ESPN NCAAF general, ESPN Oregon, Ducks Wire, Addicted to Quack). NCAAF_TEAM_LOOKUP (~30 programs) + OREGON_FEED_LOOKUP for team_tags. CFB tab (league='NCAAF') added after NCAAB. Oregon tab (team_tags Oregon/Ducks) added after CFB with dedup for ORE favorites. |
 
 ---
 
