@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 
@@ -29,7 +30,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-gray-950 text-white flex flex-col">
-        <NavBar />
+        <Suspense fallback={<div className="h-14 bg-gray-900 border-b border-gray-800" />}>
+          <NavBar />
+        </Suspense>
         <main className="flex-1 max-w-2xl mx-auto w-full">
           {children}
         </main>
