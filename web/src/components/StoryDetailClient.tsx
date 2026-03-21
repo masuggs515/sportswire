@@ -108,7 +108,7 @@ function StandingsTable({ standings, teamTags, league }: { standings: Standing[]
 }
 
 function copyShareLink(storyId: string) {
-  const url = `${window.location.origin}/story/${storyId}`
+  const url = `${window.location.origin}/?view=story&id=${storyId}`
   navigator.clipboard.writeText(url).catch(() => {})
 }
 
@@ -124,12 +124,15 @@ export default function StoryDetailClient({ detail }: Props) {
 
       <div className="px-4 py-6 space-y-6">
         {/* Back nav */}
-        <Link href="/" className="inline-flex items-center gap-1 text-gray-400 hover:text-white text-sm transition-colors">
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1 text-gray-400 hover:text-white text-sm transition-colors"
+        >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
-          Feed
-        </Link>
+          Back
+        </button>
 
         {/* League + trending badges */}
         <div className="flex items-center gap-2">
@@ -239,7 +242,7 @@ export default function StoryDetailClient({ detail }: Props) {
             <h2 className="text-white font-semibold mb-3">Related Stories</h2>
             <div className="space-y-2">
               {related.map(r => (
-                <Link key={r.id} href={`/story/${r.id}`}>
+                <Link key={r.id} href={`/?view=story&id=${r.id}`}>
                   <div className="bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl p-4 transition-colors">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs text-gray-500 uppercase">{r.league}</span>

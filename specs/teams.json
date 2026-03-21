@@ -1,0 +1,646 @@
+[
+  {
+    "league": "NFL",
+    "name": "Arizona Cardinals",
+    "abbr": "ARI",
+    "espnId": 22,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=22"
+  },
+  {
+    "league": "NFL",
+    "name": "Atlanta Falcons",
+    "abbr": "ATL",
+    "espnId": 1,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=1"
+  },
+  {
+    "league": "NFL",
+    "name": "Baltimore Ravens",
+    "abbr": "BAL",
+    "espnId": 33,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=33"
+  },
+  {
+    "league": "NFL",
+    "name": "Buffalo Bills",
+    "abbr": "BUF",
+    "espnId": 2,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=2"
+  },
+  {
+    "league": "NFL",
+    "name": "Carolina Panthers",
+    "abbr": "CAR",
+    "espnId": 29,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=29"
+  },
+  {
+    "league": "NFL",
+    "name": "Chicago Bears",
+    "abbr": "CHI",
+    "espnId": 3,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=3"
+  },
+  {
+    "league": "NFL",
+    "name": "Cincinnati Bengals",
+    "abbr": "CIN",
+    "espnId": 4,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=4"
+  },
+  {
+    "league": "NFL",
+    "name": "Cleveland Browns",
+    "abbr": "CLE",
+    "espnId": 5,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=5"
+  },
+  {
+    "league": "NFL",
+    "name": "Dallas Cowboys",
+    "abbr": "DAL",
+    "espnId": 6,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=6"
+  },
+  {
+    "league": "NFL",
+    "name": "Denver Broncos",
+    "abbr": "DEN",
+    "espnId": 7,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=7"
+  },
+  {
+    "league": "NFL",
+    "name": "Detroit Lions",
+    "abbr": "DET",
+    "espnId": 8,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=8"
+  },
+  {
+    "league": "NFL",
+    "name": "Green Bay Packers",
+    "abbr": "GB",
+    "espnId": 9,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=9"
+  },
+  {
+    "league": "NFL",
+    "name": "Houston Texans",
+    "abbr": "HOU",
+    "espnId": 34,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=34"
+  },
+  {
+    "league": "NFL",
+    "name": "Indianapolis Colts",
+    "abbr": "IND",
+    "espnId": 11,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=11"
+  },
+  {
+    "league": "NFL",
+    "name": "Jacksonville Jaguars",
+    "abbr": "JAX",
+    "espnId": 30,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=30"
+  },
+  {
+    "league": "NFL",
+    "name": "Kansas City Chiefs",
+    "abbr": "KC",
+    "espnId": 12,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=12"
+  },
+  {
+    "league": "NFL",
+    "name": "Las Vegas Raiders",
+    "abbr": "LV",
+    "espnId": 13,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=13"
+  },
+  {
+    "league": "NFL",
+    "name": "Los Angeles Chargers",
+    "abbr": "LAC",
+    "espnId": 24,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=24"
+  },
+  {
+    "league": "NFL",
+    "name": "Los Angeles Rams",
+    "abbr": "LAR",
+    "espnId": 14,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=14"
+  },
+  {
+    "league": "NFL",
+    "name": "Miami Dolphins",
+    "abbr": "MIA",
+    "espnId": 15,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=15"
+  },
+  {
+    "league": "NFL",
+    "name": "Minnesota Vikings",
+    "abbr": "MIN",
+    "espnId": 16,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=16"
+  },
+  {
+    "league": "NFL",
+    "name": "New England Patriots",
+    "abbr": "NE",
+    "espnId": 17,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=17"
+  },
+  {
+    "league": "NFL",
+    "name": "New Orleans Saints",
+    "abbr": "NO",
+    "espnId": 18,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=18"
+  },
+  {
+    "league": "NFL",
+    "name": "New York Giants",
+    "abbr": "NYG",
+    "espnId": 19,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=19"
+  },
+  {
+    "league": "NFL",
+    "name": "New York Jets",
+    "abbr": "NYJ",
+    "espnId": 20,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=20"
+  },
+  {
+    "league": "NFL",
+    "name": "Philadelphia Eagles",
+    "abbr": "PHI",
+    "espnId": 21,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=21"
+  },
+  {
+    "league": "NFL",
+    "name": "Pittsburgh Steelers",
+    "abbr": "PIT",
+    "espnId": 23,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=23"
+  },
+  {
+    "league": "NFL",
+    "name": "San Francisco 49ers",
+    "abbr": "SF",
+    "espnId": 25,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=25"
+  },
+  {
+    "league": "NFL",
+    "name": "Seattle Seahawks",
+    "abbr": "SEA",
+    "espnId": 26,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=26"
+  },
+  {
+    "league": "NFL",
+    "name": "Tampa Bay Buccaneers",
+    "abbr": "TB",
+    "espnId": 27,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=27"
+  },
+  {
+    "league": "NFL",
+    "name": "Tennessee Titans",
+    "abbr": "TEN",
+    "espnId": 10,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=10"
+  },
+  {
+    "league": "NFL",
+    "name": "Washington Commanders",
+    "abbr": "WSH",
+    "espnId": 28,
+    "rssUrl": "https://www.espn.com/nfl/rss/news?id=28"
+  },
+  {
+    "league": "NBA",
+    "name": "Atlanta Hawks",
+    "abbr": "ATL",
+    "espnId": 1,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=1"
+  },
+  {
+    "league": "NBA",
+    "name": "Boston Celtics",
+    "abbr": "BOS",
+    "espnId": 2,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=2"
+  },
+  {
+    "league": "NBA",
+    "name": "Brooklyn Nets",
+    "abbr": "BKN",
+    "espnId": 17,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=17"
+  },
+  {
+    "league": "NBA",
+    "name": "Charlotte Hornets",
+    "abbr": "CHA",
+    "espnId": 30,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=30"
+  },
+  {
+    "league": "NBA",
+    "name": "Chicago Bulls",
+    "abbr": "CHI",
+    "espnId": 4,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=4"
+  },
+  {
+    "league": "NBA",
+    "name": "Cleveland Cavaliers",
+    "abbr": "CLE",
+    "espnId": 5,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=5"
+  },
+  {
+    "league": "NBA",
+    "name": "Dallas Mavericks",
+    "abbr": "DAL",
+    "espnId": 6,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=6"
+  },
+  {
+    "league": "NBA",
+    "name": "Denver Nuggets",
+    "abbr": "DEN",
+    "espnId": 7,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=7"
+  },
+  {
+    "league": "NBA",
+    "name": "Detroit Pistons",
+    "abbr": "DET",
+    "espnId": 8,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=8"
+  },
+  {
+    "league": "NBA",
+    "name": "Golden State Warriors",
+    "abbr": "GS",
+    "espnId": 9,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=9"
+  },
+  {
+    "league": "NBA",
+    "name": "Houston Rockets",
+    "abbr": "HOU",
+    "espnId": 10,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=10"
+  },
+  {
+    "league": "NBA",
+    "name": "Indiana Pacers",
+    "abbr": "IND",
+    "espnId": 11,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=11"
+  },
+  {
+    "league": "NBA",
+    "name": "Los Angeles Clippers",
+    "abbr": "LAC",
+    "espnId": 12,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=12"
+  },
+  {
+    "league": "NBA",
+    "name": "Los Angeles Lakers",
+    "abbr": "LAL",
+    "espnId": 13,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=13"
+  },
+  {
+    "league": "NBA",
+    "name": "Memphis Grizzlies",
+    "abbr": "MEM",
+    "espnId": 29,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=29"
+  },
+  {
+    "league": "NBA",
+    "name": "Miami Heat",
+    "abbr": "MIA",
+    "espnId": 14,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=14"
+  },
+  {
+    "league": "NBA",
+    "name": "Milwaukee Bucks",
+    "abbr": "MIL",
+    "espnId": 15,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=15"
+  },
+  {
+    "league": "NBA",
+    "name": "Minnesota Timberwolves",
+    "abbr": "MIN",
+    "espnId": 16,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=16"
+  },
+  {
+    "league": "NBA",
+    "name": "New Orleans Pelicans",
+    "abbr": "NO",
+    "espnId": 3,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=3"
+  },
+  {
+    "league": "NBA",
+    "name": "New York Knicks",
+    "abbr": "NY",
+    "espnId": 18,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=18"
+  },
+  {
+    "league": "NBA",
+    "name": "Oklahoma City Thunder",
+    "abbr": "OKC",
+    "espnId": 25,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=25"
+  },
+  {
+    "league": "NBA",
+    "name": "Orlando Magic",
+    "abbr": "ORL",
+    "espnId": 19,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=19"
+  },
+  {
+    "league": "NBA",
+    "name": "Philadelphia 76ers",
+    "abbr": "PHI",
+    "espnId": 20,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=20"
+  },
+  {
+    "league": "NBA",
+    "name": "Phoenix Suns",
+    "abbr": "PHX",
+    "espnId": 21,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=21"
+  },
+  {
+    "league": "NBA",
+    "name": "Portland Trail Blazers",
+    "abbr": "POR",
+    "espnId": 22,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=22"
+  },
+  {
+    "league": "NBA",
+    "name": "Sacramento Kings",
+    "abbr": "SAC",
+    "espnId": 23,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=23"
+  },
+  {
+    "league": "NBA",
+    "name": "San Antonio Spurs",
+    "abbr": "SA",
+    "espnId": 24,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=24"
+  },
+  {
+    "league": "NBA",
+    "name": "Toronto Raptors",
+    "abbr": "TOR",
+    "espnId": 28,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=28"
+  },
+  {
+    "league": "NBA",
+    "name": "Utah Jazz",
+    "abbr": "UTAH",
+    "espnId": 26,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=26"
+  },
+  {
+    "league": "NBA",
+    "name": "Washington Wizards",
+    "abbr": "WSH",
+    "espnId": 27,
+    "rssUrl": "https://www.espn.com/nba/rss/news?id=27"
+  },
+  {
+    "league": "MLB",
+    "name": "Arizona Diamondbacks",
+    "abbr": "ARI",
+    "espnId": 29,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=29"
+  },
+  {
+    "league": "MLB",
+    "name": "Atlanta Braves",
+    "abbr": "ATL",
+    "espnId": 15,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=15"
+  },
+  {
+    "league": "MLB",
+    "name": "Baltimore Orioles",
+    "abbr": "BAL",
+    "espnId": 1,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=1"
+  },
+  {
+    "league": "MLB",
+    "name": "Boston Red Sox",
+    "abbr": "BOS",
+    "espnId": 2,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=2"
+  },
+  {
+    "league": "MLB",
+    "name": "Chicago Cubs",
+    "abbr": "CHC",
+    "espnId": 16,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=16"
+  },
+  {
+    "league": "MLB",
+    "name": "Chicago White Sox",
+    "abbr": "CHW",
+    "espnId": 4,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=4"
+  },
+  {
+    "league": "MLB",
+    "name": "Cincinnati Reds",
+    "abbr": "CIN",
+    "espnId": 17,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=17"
+  },
+  {
+    "league": "MLB",
+    "name": "Cleveland Guardians",
+    "abbr": "CLE",
+    "espnId": 5,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=5"
+  },
+  {
+    "league": "MLB",
+    "name": "Colorado Rockies",
+    "abbr": "COL",
+    "espnId": 27,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=27"
+  },
+  {
+    "league": "MLB",
+    "name": "Detroit Tigers",
+    "abbr": "DET",
+    "espnId": 6,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=6"
+  },
+  {
+    "league": "MLB",
+    "name": "Houston Astros",
+    "abbr": "HOU",
+    "espnId": 18,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=18"
+  },
+  {
+    "league": "MLB",
+    "name": "Kansas City Royals",
+    "abbr": "KC",
+    "espnId": 7,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=7"
+  },
+  {
+    "league": "MLB",
+    "name": "Los Angeles Angels",
+    "abbr": "LAA",
+    "espnId": 3,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=3"
+  },
+  {
+    "league": "MLB",
+    "name": "Los Angeles Dodgers",
+    "abbr": "LAD",
+    "espnId": 19,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=19"
+  },
+  {
+    "league": "MLB",
+    "name": "Miami Marlins",
+    "abbr": "MIA",
+    "espnId": 28,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=28"
+  },
+  {
+    "league": "MLB",
+    "name": "Milwaukee Brewers",
+    "abbr": "MIL",
+    "espnId": 8,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=8"
+  },
+  {
+    "league": "MLB",
+    "name": "Minnesota Twins",
+    "abbr": "MIN",
+    "espnId": 9,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=9"
+  },
+  {
+    "league": "MLB",
+    "name": "New York Mets",
+    "abbr": "NYM",
+    "espnId": 21,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=21"
+  },
+  {
+    "league": "MLB",
+    "name": "New York Yankees",
+    "abbr": "NYY",
+    "espnId": 10,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=10"
+  },
+  {
+    "league": "MLB",
+    "name": "Athletics",
+    "abbr": "ATH",
+    "espnId": 11,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=11"
+  },
+  {
+    "league": "MLB",
+    "name": "Philadelphia Phillies",
+    "abbr": "PHI",
+    "espnId": 22,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=22"
+  },
+  {
+    "league": "MLB",
+    "name": "Pittsburgh Pirates",
+    "abbr": "PIT",
+    "espnId": 23,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=23"
+  },
+  {
+    "league": "MLB",
+    "name": "San Diego Padres",
+    "abbr": "SD",
+    "espnId": 25,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=25"
+  },
+  {
+    "league": "MLB",
+    "name": "San Francisco Giants",
+    "abbr": "SF",
+    "espnId": 26,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=26"
+  },
+  {
+    "league": "MLB",
+    "name": "Seattle Mariners",
+    "abbr": "SEA",
+    "espnId": 12,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=12"
+  },
+  {
+    "league": "MLB",
+    "name": "St. Louis Cardinals",
+    "abbr": "STL",
+    "espnId": 24,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=24"
+  },
+  {
+    "league": "MLB",
+    "name": "Tampa Bay Rays",
+    "abbr": "TB",
+    "espnId": 30,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=30"
+  },
+  {
+    "league": "MLB",
+    "name": "Texas Rangers",
+    "abbr": "TEX",
+    "espnId": 13,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=13"
+  },
+  {
+    "league": "MLB",
+    "name": "Toronto Blue Jays",
+    "abbr": "TOR",
+    "espnId": 14,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=14"
+  },
+  {
+    "league": "MLB",
+    "name": "Washington Nationals",
+    "abbr": "WSH",
+    "espnId": 20,
+    "rssUrl": "https://www.espn.com/mlb/rss/news?id=20"
+  }
+]

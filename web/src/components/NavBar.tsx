@@ -1,17 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import SettingsSheet from './SettingsSheet'
 import AuthButton from './AuthButton'
 
 export default function NavBar() {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const view = searchParams.get('view') ?? 'feed'
 
-  const navLink = (href: string, label: string) => {
-    const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
+  const navLink = (href: string, targetView: string, label: string) => {
+    const active = view === targetView
     return (
       <Link
         href={href}
@@ -32,9 +33,9 @@ export default function NavBar() {
             Mint Street Sports
           </Link>
 
-          {navLink('/', 'Feed')}
-          {navLink('/scores', 'Scores')}
-          {navLink('/standings', 'Standings')}
+          {navLink('/', 'feed', 'Feed')}
+          {navLink('/?view=scores', 'scores', 'Scores')}
+          {navLink('/?view=standings', 'standings', 'Standings')}
 
           <div className="ml-auto flex items-center gap-3">
             <AuthButton onOpenSettings={() => setSettingsOpen(true)} />

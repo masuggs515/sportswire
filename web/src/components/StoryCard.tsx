@@ -25,7 +25,7 @@ export default function StoryCard({ story, followed }: StoryCardProps) {
   const accentColor = primaryTag ? getTeamColor(primaryTag, story.league) : '#3B82F6'
 
   return (
-    <Link href={`/story/${story.id}`} className="block">
+    <Link href={`/?view=story&id=${story.id}`} className="block">
       <article
         className={`bg-gray-900 rounded-xl overflow-hidden border border-gray-800 hover:border-gray-600 transition-all ${
           !isFollowed ? 'opacity-75' : ''
