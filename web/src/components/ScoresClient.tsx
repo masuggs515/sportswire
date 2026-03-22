@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Game, GameCompetitor, GameDetails } from '@/lib/types'
-import BoxScorePanel from './BoxScorePanel'
 import { getTeam } from '@/lib/teamConfig'
 import { createClient } from '@/lib/supabase/client'
 
@@ -13,6 +13,7 @@ type LeagueTab = typeof LEAGUE_TABS[number]
 interface ScoresClientProps {
   initialGames: Game[]
   serverNow: string
+  initialLeague?: string
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -87,7 +88,6 @@ function LinescoreTable({ game, homeComp, awayComp }: {
   const league = game.league
 
   if (league === 'MLB') {
-    // MLB: innings 1–9 (or more) | R H E
     const maxInnings = Math.max(
       awayComp.linescores.length,
       homeComp.linescores.length,
@@ -140,7 +140,6 @@ function LinescoreTable({ game, homeComp, awayComp }: {
   }
 
   if (league === 'NCAAB') {
-    // NCAAB: 1H 2H (OT) | T
     const maxPeriods = Math.max(awayComp.linescores.length, homeComp.linescores.length)
     const periods = Array.from({ length: maxPeriods }, (_, i) => i + 1)
     const periodLabel = (i: number) => i === 1 ? '1H' : i === 2 ? '2H' : `OT${i - 2}`
@@ -337,7 +336,6 @@ function Leaders({ game, details }: { game: Game; details: GameDetails }) {
 
   if (!isLive && !isFinal) return null
 
-  // MLB final: show winning/losing pitcher from featuredAthletes
   if (league === 'MLB' && isFinal && details.featuredAthletes?.length) {
     const wp = details.featuredAthletes.find(fa => fa.name === 'winningPitcher')
     const lp = details.featuredAthletes.find(fa => fa.name === 'losingPitcher')
@@ -365,7 +363,6 @@ function Leaders({ game, details }: { game: Game; details: GameDetails }) {
     )
   }
 
-  // For NBA/NFL/MLB live + NCAAB: top performer per team
   const leaderNameMap: Record<string, string[]> = {
     NBA:   ['points', 'rebounds', 'assists'],
     NFL:   ['passingYards', 'rushingYards', 'receivingYards'],
@@ -424,20 +421,13 @@ function SeasonBadge({ seasonType }: { seasonType: number | null | undefined }) 
 
 // ─── GameCard ────────────────────────────────────────────────────────────────
 
-interface GameCardProps {
-  game: Game
-  isExpanded: boolean
-  onToggle: () => void
-}
-
-function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
+function GameCard({ game }: { game: Game }) {
+  const router = useRouter()
   const isLive = game.status === 'in_progress'
   const isFinal = game.status === 'final'
   const isScheduled = game.status === 'scheduled'
   const details = game.details
-  const canExpand = isLive || isFinal
 
-  // Touch-scroll prevention: only fire toggle if pointer didn't move significantly
   const pointerStart = useRef<{ x: number; y: number } | null>(null)
 
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -445,15 +435,14 @@ function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (!pointerStart.current || !canExpand) return
+    if (!pointerStart.current) return
     const dx = Math.abs(e.clientX - pointerStart.current.x)
     const dy = Math.abs(e.clientY - pointerStart.current.y)
     pointerStart.current = null
-    if (dx > 8 || dy > 8) return // scroll gesture — ignore
-    onToggle()
+    if (dx > 8 || dy > 8) return
+    router.push(`/scores/${game.league.toLowerCase()}/${game.external_id}`)
   }
 
-  // Find competitors from details if available, else fall back to teamConfig
   const homeComp = details?.competitors.find(c => c.homeAway === 'home')
   const awayComp = details?.competitors.find(c => c.homeAway === 'away')
 
@@ -468,30 +457,21 @@ function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
   const homeName = homeComp?.team.displayName ?? fallbackHome?.fullName ?? game.home_team
   const awayName = awayComp?.team.displayName ?? fallbackAway?.fullName ?? game.away_team
 
-  // Bold the winning team if final
   const awayWins = isFinal && game.away_score > game.home_score
   const homeWins = isFinal && game.home_score > game.away_score
 
-  // Human-readable status — prefer clock (ESPN), fall back to period (NCAAB/BDL legacy)
   const statusDisplay = game.clock ?? game.period ?? 'LIVE'
 
   const showLinescore = (isLive || isFinal) && homeComp && awayComp &&
     (homeComp.linescores.length > 0 || awayComp.linescores.length > 0)
 
-  // Border style: expanded gets accent left border; live gets green tint
-  const borderClass = isExpanded
-    ? 'border-blue-500/50'
-    : isLive
-    ? 'border-green-500/40'
-    : 'border-gray-800'
+  const borderClass = isLive ? 'border-green-500/40' : 'border-gray-800'
 
   return (
     <div
-      className={`bg-gray-900 border rounded-xl overflow-hidden ${borderClass} ${
-        isExpanded ? 'border-l-2' : ''
-      } transition-colors duration-150 ${canExpand ? 'cursor-pointer select-none' : ''}`}
-      onPointerDown={canExpand ? handlePointerDown : undefined}
-      onPointerUp={canExpand ? handlePointerUp : undefined}
+      className={`bg-gray-900 border rounded-xl overflow-hidden ${borderClass} transition-colors duration-150 cursor-pointer select-none active:bg-gray-800/80`}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       <div className="p-4">
         {/* Status row */}
@@ -579,23 +559,7 @@ function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
         {details && (
           <Leaders game={game} details={details} />
         )}
-
-        {/* Box score affordance — bottom center */}
-        {canExpand && (
-          <div className="mt-3 pt-2 text-center">
-            <span className="text-[11px] text-gray-600 underline underline-offset-2 decoration-gray-700">
-              {isExpanded
-                ? '↑ Hide'
-                : isLive
-                ? 'Live Box Score'
-                : 'Box Score'}
-            </span>
-          </div>
-        )}
       </div>
-
-      {/* Inline box score panel */}
-      {isExpanded && <BoxScorePanel game={game} />}
     </div>
   )
 }
@@ -607,15 +571,11 @@ function Section({
   games,
   accent,
   subtitle,
-  expandedId,
-  onToggle,
 }: {
   title: string
   games: Game[]
   accent?: string
   subtitle?: string
-  expandedId: string | null
-  onToggle: (id: string) => void
 }) {
   if (games.length === 0) return null
 
@@ -629,12 +589,7 @@ function Section({
       </div>
       <div className="px-4 space-y-3">
         {games.map(g => (
-          <GameCard
-            key={g.id}
-            game={g}
-            isExpanded={expandedId === g.id}
-            onToggle={() => onToggle(g.id)}
-          />
+          <GameCard key={g.id} game={g} />
         ))}
       </div>
     </div>
@@ -643,14 +598,12 @@ function Section({
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
-export default function ScoresClient({ initialGames, serverNow }: ScoresClientProps) {
-  const [activeTab, setActiveTab] = useState<LeagueTab>('All')
+export default function ScoresClient({ initialGames, serverNow, initialLeague }: ScoresClientProps) {
+  const validInitial = LEAGUE_TABS.includes(initialLeague as LeagueTab)
+    ? (initialLeague as LeagueTab)
+    : 'All'
+  const [activeTab, setActiveTab] = useState<LeagueTab>(validInitial)
   const [games, setGames] = useState<Game[]>(initialGames)
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-
-  const handleToggle = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id)
-  }
 
   // Supabase Realtime for live score updates
   useEffect(() => {
@@ -682,12 +635,10 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
   const yesterday = new Date(today)
   yesterday.setDate(yesterday.getDate() - 1)
 
-  // Filter by league tab
   const tabGames = activeTab === 'All'
     ? games
     : games.filter(g => g.league === activeTab)
 
-  // Partition into sections
   const live = tabGames.filter(g => g.status === 'in_progress')
 
   const todayGames = tabGames.filter(g => {
@@ -705,7 +656,6 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
     return g.status === 'final' && isSameDay(gDate, yesterday)
   })
 
-  // Group upcoming by date label
   const upcomingByDate = upcoming.reduce<Record<string, Game[]>>((acc, g) => {
     const label = formatDate(g.game_time)
     if (!acc[label]) acc[label] = []
@@ -715,7 +665,6 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
 
   const hasAnyGames = live.length + todayGames.length + upcoming.length + recent.length > 0
 
-  // Offseason messages per league
   const offseasonMsg: Partial<Record<LeagueTab, string>> = {
     NFL:  'NFL season returns in September',
     NBA:  'NBA season returns in October',
@@ -755,45 +704,24 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
           </div>
         ) : (
           <>
-            {/* LIVE */}
-            <Section
-              title="Live"
-              games={live}
-              accent="#22C55E"
-              expandedId={expandedId}
-              onToggle={handleToggle}
-            />
+            <Section title="Live" games={live} accent="#22C55E" />
 
-            {/* TODAY */}
             <Section
               title="Today"
               games={todayGames}
               accent="#3B82F6"
               subtitle={today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              expandedId={expandedId}
-              onToggle={handleToggle}
             />
 
-            {/* UPCOMING — grouped by date */}
             {Object.entries(upcomingByDate).map(([dateLabel, dateGames]) => (
-              <Section
-                key={dateLabel}
-                title={dateLabel}
-                games={dateGames}
-                accent="#6B7280"
-                expandedId={expandedId}
-                onToggle={handleToggle}
-              />
+              <Section key={dateLabel} title={dateLabel} games={dateGames} accent="#6B7280" />
             ))}
 
-            {/* RECENT */}
             <Section
               title="Yesterday"
               games={recent}
               accent="#4B5563"
               subtitle={yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              expandedId={expandedId}
-              onToggle={handleToggle}
             />
           </>
         )}

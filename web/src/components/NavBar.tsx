@@ -10,8 +10,8 @@ export default function NavBar() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const pathname = usePathname()
 
-  const navLink = (href: string, label: string) => {
-    const active = pathname === href
+  const navLink = (href: string, label: string, matchPrefix?: string) => {
+    const active = matchPrefix ? pathname.startsWith(matchPrefix) : pathname === href
     return (
       <Link
         href={href}
@@ -33,7 +33,7 @@ export default function NavBar() {
           </Link>
 
           {navLink('/', 'Feed')}
-          {navLink('/scores', 'Scores')}
+          {navLink('/scores', 'Scores', '/scores')}
           {navLink('/standings', 'Standings')}
 
           <div className="ml-auto flex items-center gap-3">
