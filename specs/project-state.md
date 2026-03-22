@@ -1,7 +1,7 @@
 # Project State
-Last updated: 2026-03-20 (session 19)
+Last updated: 2026-03-22 (session 20)
 Current phase: 2 — Next.js Web Feed (in progress)
-Current task branch: task/oregon-cfb-feed (PR open → dev)
+Current task branch: task/mlb-highlights (PR open → dev)
 
 **Platform pivot (2026-03-18):** Flutter replaced with Next.js 15. Supabase backend unchanged.
 
@@ -32,6 +32,7 @@ Current task branch: task/oregon-cfb-feed (PR open → dev)
 | 20260319000009_espn_scores_columns | not yet | ✅ applied | not yet |
 | 20260319000010_espn_scores_cron | not yet | ✅ applied | not yet |
 | 20260319000011_add_favorite_teams | not yet | ✅ applied | not yet |
+| 20260322000012_mlb_game_pk | not yet | pending | not yet |
 
 ---
 
@@ -64,6 +65,7 @@ Current task branch: task/oregon-cfb-feed (PR open → dev)
 - [ ] Add Mixpanel to web app — install mixpanel-browser, create lib/analytics.ts, fire events per analytics-agent-spec.md — raised 2026-03-18
 - [ ] Gemini ai_analysis backfill — quota exhausted on 2026-03-16 (was using deprecated gemini-2.0-flash). Migrated to gemini-2.5-flash-lite-preview-06-17 (1,000 RPD free tier). After quota resets at midnight Pacific Time: (1) run `DELETE FROM stories;` in Supabase SQL Editor, (2) invoke fetch-news manually to re-ingest all articles with ai_analysis populating correctly — raised 2026-03-16
 - [ ] Upgrade BallDontLie to All-Star tier ($9.99/sport x2 = $19.98/mo) before story detail standings work — required to enable standings in story view. After upgrading: re-enable fetch-standings cron in migration 006, redeploy fetch-standings Edge Function, restore standings query in get-story-detail — raised 2026-03-16
+- [ ] Apply migration 012 to sportswire-dev: `supabase db push --linked` (adds `mlb_game_pk TEXT` column to games) — raised 2026-03-22
 - [ ] One-time cleanup: run in Supabase SQL Editor after merging PR #10 (fix/feed-tag-architecture):
   `UPDATE stories SET league = 'NFL' WHERE league = 'Panthers';`
   `UPDATE stories SET league = 'MLB' WHERE league = 'Yankees';`
@@ -114,6 +116,7 @@ Current task branch: task/oregon-cfb-feed (PR open → dev)
 | 2026-03-19 | Panthers feed + ordering fix | fix/panthers-feed-order | Fixed ordering bug: Panthers loop now runs before the ESPN NFL loop, with all processed guids recorded in seenGuids — NFL loop skips them. Prevents Panthers stories from being double-ingested as league='NFL'. Cleanup SQL provided as TODO MAS to re-tag existing misclassified stories. |
 | 2026-03-20 | Feed tag architecture simplification | fix/feed-tag-architecture | Removed separate Panthers/Yankees loops and league='Panthers'/'Yankees' values. All feeds now in single ESPN_RSS loop. Panthers→league='NFL', Yankees→league='MLB'. Panthers/Yankees feed tabs now filter by team_tags instead of league. Added full MLB team lookup. Fixed Gemini model (gemini-2.5-flash-lite) and duplicate PANTHERS_FEEDS const. |
 | 2026-03-20 | Oregon Ducks + CFB feeds | task/oregon-cfb-feed | Added 4 NCAAF RSS sources to fetch-news (ESPN NCAAF general, ESPN Oregon, Ducks Wire, Addicted to Quack). NCAAF_TEAM_LOOKUP (~30 programs) + OREGON_FEED_LOOKUP for team_tags. CFB tab (league='NCAAF') added after NCAAB. Oregon tab (team_tags Oregon/Ducks) added after CFB with dedup for ORE favorites. |
+| 2026-03-22 | MLB play highlights | task/mlb-highlights | fetch-mlb-scores: fetches MLB Stats API schedule once per run, cross-references gamePk by team name, stores as mlb_game_pk. Migration 012 adds mlb_game_pk TEXT to games. BoxScorePanel: MLB Highlights section fetches mlb/content endpoint, shows up to 10 clips with thumbnail+title+inline video. |
 
 ---
 
@@ -132,7 +135,7 @@ Current task branch: task/oregon-cfb-feed (PR open → dev)
 
 ## Environment Notes
 
-- sportswire-dev: ✅ created, migrations 001–011 applied, 8 Edge Functions live (fetch-news, fetch-scores[deprecated], fetch-nba-scores, fetch-nfl-scores, fetch-mlb-scores, get-story-detail, fetch-standings, fetch-ncaab-scores), cron: fetch-scores unscheduled, fetch-nba/nfl/mlb-scores + ncaab-scores running every minute
+- sportswire-dev: ✅ created, migrations 001–011 applied (012 pending), 8 Edge Functions live (fetch-news, fetch-scores[deprecated], fetch-nba-scores, fetch-nfl-scores, fetch-mlb-scores, get-story-detail, fetch-standings, fetch-ncaab-scores), cron: fetch-scores unscheduled, fetch-nba/nfl/mlb-scores + ncaab-scores running every minute
 - sportswire-prod: not yet created
 - Local Supabase: not yet started
 - BallDontLie: current tier does not include standings endpoint — fetch-standings disabled until upgraded

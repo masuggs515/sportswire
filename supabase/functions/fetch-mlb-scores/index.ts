@@ -11,6 +11,9 @@
  * Stores full competitors JSON (logos, linescores, leaders, probables, situation)
  * in details JSONB column. MLB-specific: featuredAthletes for final game pitching lines,
  * situation for live at-bat/baserunner state.
+ *
+ * Also fetches MLB Stats API schedule to cross-reference gamePk for highlight videos.
+ * Stored in mlb_game_pk column. MLB schedule fetch errors are non-blocking.
  */
 
 import { serve }        from "https://deno.land/std@0.168.0/http/server.ts";
@@ -18,6 +21,77 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ESPN_URL =
   "https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/scoreboard";
+
+// ── MLB Stats API schedule ────────────────────────────────────────────────────
+// Free, no auth. Returns games for a given date with team names.
+function mlbScheduleUrl(dateStr: string): string {
+  return `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${dateStr}&hydrate=team`;
+}
+
+// ── Team name fuzzy matching ──────────────────────────────────────────────────
+// ESPN uses full display names e.g. "New York Yankees".
+// MLB Stats API also uses full names. Direct match is usually sufficient;
+// fallback to last-word (nickname) comparison for edge cases.
+function normalise(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9 ]/g, "").trim();
+}
+
+function teamLastWord(name: string): string {
+  const parts = normalise(name).split(/\s+/);
+  return parts[parts.length - 1] ?? "";
+}
+
+function teamNamesMatch(espnName: string, mlbName: string): boolean {
+  const e = normalise(espnName);
+  const m = normalise(mlbName);
+  if (e === m) return true;
+  if (e.includes(m) || m.includes(e)) return true;
+  // nickname fallback
+  if (teamLastWord(espnName) === teamLastWord(mlbName)) return true;
+  return false;
+}
+
+// ── Build gamePk lookup map from MLB schedule ─────────────────────────────────
+// Returns Map keyed by "awayTeamName|homeTeamName" → gamePk
+async function buildGamePkMap(dateStr: string): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  try {
+    const res = await fetch(mlbScheduleUrl(dateStr));
+    if (!res.ok) {
+      console.warn(`[fetch-mlb-scores] MLB schedule returned HTTP ${res.status}`);
+      return map;
+    }
+    const data: any = await res.json();
+    const mlbGames: any[] = data?.dates?.[0]?.games ?? [];
+    for (const g of mlbGames) {
+      const pk   = g.gamePk;
+      const home = g.teams?.home?.team?.name ?? "";
+      const away = g.teams?.away?.team?.name ?? "";
+      if (pk && home && away) {
+        map.set(`${away}|${home}`, pk);
+      }
+    }
+    console.log(`[fetch-mlb-scores] MLB schedule fetched: ${map.size} games for ${dateStr}`);
+  } catch (err) {
+    console.warn("[fetch-mlb-scores] MLB schedule fetch error (non-blocking):", err);
+  }
+  return map;
+}
+
+// ── Look up gamePk for an ESPN event ─────────────────────────────────────────
+function findGamePk(
+  espnHomeTeam: string,
+  espnAwayTeam: string,
+  gamePkMap: Map<string, number>
+): number | null {
+  for (const [key, pk] of gamePkMap.entries()) {
+    const [mapAway, mapHome] = key.split("|");
+    if (teamNamesMatch(espnHomeTeam, mapHome) && teamNamesMatch(espnAwayTeam, mapAway)) {
+      return pk;
+    }
+  }
+  return null;
+}
 
 serve(async () => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -29,7 +103,8 @@ serve(async () => {
   });
 
   // ── Seasonal gate: MLB season March–November ──────────────────────────────
-  const month = new Date().getUTCMonth() + 1; // 1–12
+  const now   = new Date();
+  const month = now.getUTCMonth() + 1; // 1–12
   const mlbActive = month >= 3 && month <= 11;
   if (!mlbActive) {
     console.log("[fetch-mlb-scores] MLB offseason — skipping");
@@ -68,6 +143,11 @@ serve(async () => {
     );
   }
 
+  // ── Fetch MLB schedule once for today ─────────────────────────────────────
+  // Use UTC date since ESPN game dates are UTC-based; MLB schedule date param is YYYY-MM-DD.
+  const dateStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const gamePkMap = await buildGamePkMap(dateStr);
+
   const supabase = createClient(supabaseUrl!, secretKey!);
   let upserted  = 0;
   let errored   = 0;
@@ -92,8 +172,6 @@ serve(async () => {
         : "scheduled";
 
       // ── Period and clock ────────────────────────────────────────────────
-      // period = inning number
-      // clock  = human-readable detail e.g. "Bot 4th", "Top 7th", "Final"
       const period = event.status?.period != null
         ? String(event.status.period)
         : null;
@@ -103,9 +181,15 @@ serve(async () => {
       const homeScore = parseInt(homeComp.score ?? "0", 10) || 0;
       const awayScore = parseInt(awayComp.score ?? "0", 10) || 0;
 
+      // ── MLB gamePk from Stats API ────────────────────────────────────────
+      const homeTeamName = homeComp.team?.displayName ?? homeComp.team?.abbreviation ?? "";
+      const awayTeamName = awayComp.team?.displayName ?? awayComp.team?.abbreviation ?? "";
+      const gamePk = gamePkMap.size > 0
+        ? findGamePk(homeTeamName, awayTeamName, gamePkMap)
+        : null;
+      const mlbGamePkStr = gamePk != null ? String(gamePk) : null;
+
       // ── Build details JSONB ─────────────────────────────────────────────
-      // MLB-specific: includes probables (starting pitchers) and featuredAthletes
-      // (winning/losing/saving pitcher on final games) and live situation (count, bases)
       const details = {
         competitors: competitors.map((c: any) => ({
           homeAway:   c.homeAway,
@@ -137,7 +221,6 @@ serve(async () => {
           records: (c.records ?? []).slice(0, 1).map((r: any) => ({
             summary: r.summary ?? "",
           })),
-          // MLB: starting pitcher probables
           probables: (c.probables ?? []).map((p: any) => ({
             name:    p.name ?? "",
             athlete: {
@@ -150,9 +233,7 @@ serve(async () => {
             })),
           })),
         })),
-        // Live game: current at-bat state (count, runners, batter, pitcher)
         situation: competition.situation ?? null,
-        // Final game: winning/losing/saving pitcher lines
         featuredAthletes: (competition.status?.featuredAthletes ?? []).map((fa: any) => ({
           name:    fa.name ?? "",
           athlete: {
@@ -171,19 +252,20 @@ serve(async () => {
 
       const { error } = await supabase.from("games").upsert(
         {
-          external_id: `mlb_${event.id}`,
-          league:      "MLB",
-          home_team:   homeComp.team?.displayName ?? homeComp.team?.abbreviation ?? "",
-          away_team:   awayComp.team?.displayName ?? awayComp.team?.abbreviation ?? "",
-          home_score:  homeScore,
-          away_score:  awayScore,
+          external_id:  `mlb_${event.id}`,
+          league:       "MLB",
+          home_team:    homeTeamName,
+          away_team:    awayTeamName,
+          home_score:   homeScore,
+          away_score:   awayScore,
           status,
-          game_time:   event.date ?? null,
+          game_time:    event.date ?? null,
           period,
           clock,
-          broadcast:   competition.broadcast ?? null,
+          broadcast:    competition.broadcast ?? null,
           details,
-          fetched_at:  new Date().toISOString(),
+          mlb_game_pk:  mlbGamePkStr,
+          fetched_at:   new Date().toISOString(),
         },
         { onConflict: "external_id" }
       );
@@ -193,6 +275,9 @@ serve(async () => {
         errored++;
       } else {
         upserted++;
+        if (mlbGamePkStr) {
+          console.log(`[fetch-mlb-scores] gamePk ${mlbGamePkStr} matched for ${awayTeamName} @ ${homeTeamName}`);
+        }
       }
     } catch (eventErr) {
       console.error(`[fetch-mlb-scores] error processing event ${event.id}:`, eventErr);

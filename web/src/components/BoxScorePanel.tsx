@@ -11,6 +11,182 @@ import {
   EspnBoxAthlete,
 } from '@/lib/types'
 
+// ─── MLB Highlights types ─────────────────────────────────────────────────────
+
+interface MlbHighlightCut {
+  width: number
+  src: string
+}
+
+interface MlbHighlightPlayback {
+  name: string
+  url: string
+}
+
+interface MlbHighlightItem {
+  title: string
+  description?: string
+  duration: string // seconds as string e.g. "34"
+  image?: { cuts?: MlbHighlightCut[] }
+  playbacks?: MlbHighlightPlayback[]
+}
+
+function mlbContentUrl(gamePk: string): string {
+  return `https://statsapi.mlb.com/api/v1/game/${gamePk}/content`
+}
+
+function pickThumbnail(cuts?: MlbHighlightCut[]): string | null {
+  if (!cuts || cuts.length === 0) return null
+  // Find cut with width closest to 320px
+  return cuts.reduce((best, cut) => {
+    return Math.abs(cut.width - 320) < Math.abs(best.width - 320) ? cut : best
+  }).src
+}
+
+function pickVideoUrl(playbacks?: MlbHighlightPlayback[]): string | null {
+  if (!playbacks || playbacks.length === 0) return null
+  const mp4 = playbacks.find(p => p.name === 'mp4Avc')
+  if (mp4?.url) return mp4.url
+  return playbacks.find(p => !!p.url)?.url ?? null
+}
+
+function formatDuration(seconds: string): string {
+  const s = parseInt(seconds, 10)
+  if (isNaN(s)) return ''
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+// ─── MLB Highlight Card ───────────────────────────────────────────────────────
+
+function HighlightCard({
+  item,
+  isPlaying,
+  onPlay,
+}: {
+  item: MlbHighlightItem
+  isPlaying: boolean
+  onPlay: () => void
+}) {
+  const thumb = pickThumbnail(item.image?.cuts)
+  const videoUrl = pickVideoUrl(item.playbacks)
+  const duration = formatDuration(item.duration)
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  useEffect(() => {
+    if (!isPlaying && videoRef.current) {
+      videoRef.current.pause()
+    }
+  }, [isPlaying])
+
+  return (
+    <div className="mb-3">
+      <button
+        className="w-full text-left flex items-start gap-3 p-2 rounded-md hover:bg-gray-800/50 transition-colors"
+        onClick={() => {
+          if (!videoUrl) {
+            window.open(videoUrl ?? '', '_blank')
+            return
+          }
+          onPlay()
+        }}
+      >
+        {/* Thumbnail */}
+        <div className="relative w-20 h-14 rounded overflow-hidden flex-shrink-0 bg-gray-800">
+          {thumb ? (
+            <Image src={thumb} alt={item.title} fill className="object-cover" unoptimized />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          )}
+          {/* Play overlay */}
+          {!isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          )}
+          {duration && (
+            <div className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded font-mono">
+              {duration}
+            </div>
+          )}
+        </div>
+
+        {/* Title */}
+        <p className="text-xs text-gray-300 leading-snug line-clamp-3 flex-1">{item.title}</p>
+      </button>
+
+      {/* Inline video player — shown when tapped */}
+      {isPlaying && videoUrl && (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          controls
+          autoPlay
+          className="w-full mt-1 rounded-md bg-black"
+          onError={() => {
+            // Fallback: open in new tab
+            window.open(videoUrl, '_blank')
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+// ─── MLB Highlights section ───────────────────────────────────────────────────
+
+function MlbHighlights({ gamePk }: { gamePk: string }) {
+  const [items, setItems] = useState<MlbHighlightItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [playingIdx, setPlayingIdx] = useState<number | null>(null)
+  const fetched = useRef(false)
+
+  useEffect(() => {
+    if (fetched.current) return
+    fetched.current = true
+
+    fetch(mlbContentUrl(gamePk))
+      .then(r => r.json())
+      .then((d: Record<string, unknown>) => {
+        const highlights = d?.highlights as { highlights?: { items?: MlbHighlightItem[] } } | undefined
+        const raw: MlbHighlightItem[] = highlights?.highlights?.items ?? []
+        setItems(raw.slice(0, 10))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [gamePk])
+
+  if (loading) {
+    return (
+      <div className="pt-4 border-t border-gray-800">
+        <SectionHeader>Highlights</SectionHeader>
+        <div className="text-xs text-gray-600 animate-pulse py-2">Loading highlights…</div>
+      </div>
+    )
+  }
+
+  if (items.length === 0) return null
+
+  return (
+    <div className="pt-4 border-t border-gray-800">
+      <SectionHeader>Highlights</SectionHeader>
+      {items.map((item, i) => (
+        <HighlightCard
+          key={i}
+          item={item}
+          isPlaying={playingIdx === i}
+          onPlay={() => setPlayingIdx(playingIdx === i ? null : i)}
+        />
+      ))}
+    </div>
+  )
+}
+
 // ─── ESPN summary URL per league ────────────────────────────────────────────
 
 const SPORT_PATH: Record<string, string> = {
@@ -419,6 +595,11 @@ export default function BoxScorePanel({ game }: { game: Game }) {
             <MlbBox players={players} />
           )}
         </>
+      )}
+
+      {/* MLB Highlights — shown only for MLB games with a known gamePk */}
+      {game.league === 'MLB' && game.mlb_game_pk && (
+        <MlbHighlights gamePk={game.mlb_game_pk} />
       )}
     </div>
   )
