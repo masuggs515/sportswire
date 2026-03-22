@@ -45,12 +45,6 @@ function desiredHeaders(names: string[], desired: string[]): string[] {
   return desired.filter(d => names.includes(d))
 }
 
-// ESPN returns type as a plain string for MLB, an object { abbreviation } for NFL
-function statTypeKey(type: EspnStatGroup['type']): string {
-  if (!type) return ''
-  return typeof type === 'string' ? type.toLowerCase() : (type.abbreviation ?? '').toLowerCase()
-}
-
 // ─── Headshot ────────────────────────────────────────────────────────────────
 
 function Headshot({ src, name }: { src?: string; name: string }) {
@@ -229,7 +223,7 @@ function NflBox({ players, teams }: { players: EspnBoxPlayer[]; teams: EspnBoxTe
 
         for (const teamData of players) {
           const group = teamData.statistics.find(
-            (g: EspnStatGroup) => statTypeKey(g.type) === typeAbbr
+            (g: EspnStatGroup) => g.type?.abbreviation?.toLowerCase() === typeAbbr
           )
           if (!group || group.athletes.length === 0) continue
 
@@ -308,7 +302,7 @@ function MlbBox({ players }: { players: EspnBoxPlayer[] }) {
         <SectionHeader>Pitching</SectionHeader>
         {players.map((teamData, ti) => {
           const group = teamData.statistics.find(
-            (g: EspnStatGroup) => statTypeKey(g.type) === 'pitching'
+            (g: EspnStatGroup) => g.type?.abbreviation?.toLowerCase() === 'pitching'
           )
           if (!group || group.athletes.length === 0) return null
 
@@ -334,7 +328,7 @@ function MlbBox({ players }: { players: EspnBoxPlayer[] }) {
       {/* Batting — per team */}
       {players.map((teamData, ti) => {
         const group = teamData.statistics.find(
-          (g: EspnStatGroup) => statTypeKey(g.type) === 'batting'
+          (g: EspnStatGroup) => g.type?.abbreviation?.toLowerCase() === 'batting'
         )
         if (!group || group.athletes.length === 0) return null
 

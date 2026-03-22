@@ -155,9 +155,7 @@ export interface EspnBoxAthlete {
 }
 
 export interface EspnStatGroup {
-  // NFL: type is an object { abbreviation, name }
-  // MLB: type is a plain string e.g. "batting" | "pitching"
-  type?: string | { abbreviation: string; name: string }
+  type?: { abbreviation: string; name: string }
   names: string[]
   athletes: EspnBoxAthlete[]
   totals?: string[]
