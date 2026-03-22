@@ -203,6 +203,7 @@ CREATE TABLE games (
   home_win_prob   FLOAT,                 -- 0.0–1.0
   box_score       JSONB,                 -- legacy BDL field (unused for ESPN sports)
   details         JSONB,                 -- full competitors: logos, linescores, leaders, situation, etc.
+  mlb_game_pk     TEXT,                  -- MLB Stats API gamePk for highlight video fetch (MLB only, added migration 012)
   fetched_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -476,6 +477,15 @@ Logic: identical pattern. MLB extras in `details`:
 - `situation` — balls, strikes, outs, onFirst/onSecond/onThird, batter, pitcher
 - `featuredAthletes[]` — winningPitcher, losingPitcher, savePitcher on final games
 
+**MLB gamePk cross-reference (added 2026-03-22):**
+- After fetching ESPN data, fetches MLB Stats API schedule once per run:
+  `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={YYYY-MM-DD}&hydrate=team`
+- Matches each ESPN game to an MLB schedule game by comparing home/away team names
+  (normalised lowercase, with last-word nickname fallback for edge cases)
+- Stores matched `gamePk` as `mlb_game_pk` TEXT column on the games row
+- If no match found: stores null; frontend skips highlights gracefully
+- MLB schedule fetch errors are non-blocking — ESPN upsert continues on error
+
 ---
 
 ### `fetch-standings`
@@ -581,6 +591,7 @@ supabase/
     20260319000009_espn_scores_columns.sql  -- adds clock, broadcast, details columns to games
     20260319000010_espn_scores_cron.sql     -- unschedules fetch-scores; schedules fetch-nba/nfl/mlb-scores
     20260319000011_add_favorite_teams.sql   -- adds favorite_teams JSONB column to user_preferences
+    20260322000012_mlb_game_pk.sql          -- adds mlb_game_pk TEXT column to games
   functions/
     _shared/
       bdl_client.ts

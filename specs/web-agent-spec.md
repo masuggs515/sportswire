@@ -474,6 +474,32 @@ Sport/league mapping: NBA→basketball/nba, NFL→football/nfl, MLB→baseball/m
 - Player name sticky-left in each table
 - "Game hasn't started yet" message for scheduled games with no box score
 
+### MLB Highlights (added 2026-03-22)
+
+Only rendered when `game.league === 'MLB'` and `game.mlb_game_pk` is set.
+
+**Data source:** MLB Stats API (no auth, free):
+```
+https://statsapi.mlb.com/api/v1/game/{mlb_game_pk}/content
+```
+Response path: `data.highlights.highlights.items[]`
+
+**Per item:**
+- `title` — clip title
+- `duration` — clip length in seconds (formatted as "0:34")
+- `image.cuts[]` — thumbnails, pick cut with width closest to 320px
+- `playbacks[]` — prefer `name === 'mp4Avc'` for URL; fall back to any playback with `.url`
+
+**UI:**
+- "Highlights" section header below box score stats, separated by a border
+- Up to 10 clips, order as returned (most recent first)
+- Each clip card: thumbnail (80×56px, lazy via Next.js Image) + play overlay + duration badge + title text
+- Tapping the card: toggles an inline `<video>` element below the card (autoplay, controls, full width)
+  - If video errors: falls back to `window.open(url, '_blank')`
+  - Pauses when another clip is tapped
+- While loading: "Loading highlights…" text (pulse animation)
+- On fetch error or no items: section hidden entirely
+
 ---
 
 ## lib/types.ts — ESPN types
@@ -528,6 +554,7 @@ StandingsView       // 'Division' | 'Conference' | 'League'
 - [x] Standings table: ESPN just-in-time fetch, team logos, monospace stats, sticky team name, per-league columns
 - [x] Box score chevron on all game cards (ScoresClient)
 - [x] BoxScorePanel: NBA/NCAAB player tables (starters/bench/totals), NFL passing/rushing/receiving/team stats, MLB pitching+batting
+- [x] BoxScorePanel: MLB Highlights section (mlb_game_pk → MLB Stats API, inline video, up to 10 clips)
 - [x] NavBar: Standings link added alongside Feed + Scores
 - [ ] Mixpanel events (TODO MAS — see above)
 - [ ] Disable email confirmations in Supabase Auth settings (TODO MAS — manual dashboard action)

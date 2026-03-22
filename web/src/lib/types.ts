@@ -99,6 +99,7 @@ export interface Game {
   details: GameDetails | null
   home_win_prob: number | null
   box_score: Record<string, unknown> | null
+  mlb_game_pk: string | null
   fetched_at: string
 }
 
