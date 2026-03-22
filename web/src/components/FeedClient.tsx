@@ -96,7 +96,7 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
     result.push('NFL')
     favorites.filter(f => f.league === 'NFL').slice(0, 2).forEach(f => result.push(f.abbr))
     if (!hasCARFavorite) result.push('Panthers')
-    result.push('NCAAB', 'CFB')
+    result.push('NCAAB', 'Duke', 'CFB')
     if (!hasOregonFavorite) result.push('Oregon')
     result.push('MLB')
     favorites.filter(f => f.league === 'MLB').slice(0, 2).forEach(f => result.push(f.abbr))
@@ -128,6 +128,10 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
     // Yankees tab — MLB stories tagged NYY or Yankees
     if (effectiveTab === 'Yankees') {
       return stories.filter(s => s.team_tags.includes('NYY') || s.team_tags.includes('Yankees'))
+    }
+    // Duke tab — NCAAB stories tagged DUKE or Duke
+    if (effectiveTab === 'Duke') {
+      return stories.filter(s => s.team_tags.includes('DUKE') || s.team_tags.includes('Duke'))
     }
     // Oregon tab — NCAAF stories tagged Oregon or Ducks
     if (effectiveTab === 'Oregon') {
