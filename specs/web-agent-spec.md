@@ -58,7 +58,11 @@ web/
       layout.tsx                 # Root layout with NavBar
       globals.css                # Tailwind directives + global styles
       scores/
-        page.tsx                 # Scores page — yesterday through next 3 days, revalidate 30s
+        page.tsx                 # Scores page — all league tabs, revalidate 30s
+        [league]/
+          page.tsx               # Scores page with league tab pre-selected (nba/nfl/mlb/ncaab)
+          [gameId]/
+            page.tsx             # Game detail page — fetches game by external_id, renders GameDetailClient
       standings/
         page.tsx                 # Standings page — server component wrapping StandingsClient
       story/
@@ -73,8 +77,9 @@ web/
       StoryDetailClient.tsx      # Full story view (client)
       TeamBadge.tsx              # Coloured team abbreviation chip
       SettingsSheet.tsx          # Slide-out settings: Favorite Teams (auth) + Follow Teams (localStorage)
-      ScoresClient.tsx           # Scores page client: sections, league tabs, realtime, box score expansion
-      BoxScorePanel.tsx          # Inline box score panel: NBA/NFL/MLB/NCAAB — fetched just-in-time from ESPN summary API
+      ScoresClient.tsx           # Scores page client: sections, league tabs, realtime; cards navigate to game detail
+      BoxScorePanel.tsx          # Inline box score panel (unused — retained for reference)
+      GameDetailClient.tsx       # Game detail page client: collapsible Overview/Box Score/Highlights sections
       StandingsClient.tsx        # Standings page client: league tabs, Division/Conference/League toggle, ESPN just-in-time fetch
       AuthModal.tsx              # Email+password sign in / sign up modal (no page redirect)
       AuthButton.tsx             # NavBar auth widget: "Sign in" button or avatar dropdown
@@ -319,9 +324,17 @@ Fill in `web/.env.local` before running.
 
 ---
 
-## Scores Page (`/scores`)
+## Scores Page (`/scores` and `/scores/{league}`)
 
 Server component (`revalidate = 30`). Reads directly from the `games` table — no Edge Function needed.
+
+`/scores` shows all league tabs (default tab = All).
+`/scores/{league}` pre-selects the given league tab (slug: nba/nfl/mlb/ncaab → NBA/NFL/MLB/NCAAB). Returns 404 for unknown slugs.
+
+`ScoresClient` accepts `initialLeague?: string` prop to pre-select tab on mount.
+
+### Card navigation
+Every game card navigates to `/scores/{league}/{gameId}` where `gameId = game.external_id`. Scroll-gesture detection: pointer move >8px is treated as scroll and does not navigate. No inline box score expansion — that is handled by the game detail page.
 
 ### Data window
 Fetches games from yesterday through next 3 days. Also merges any in_progress games outside that window (edge case).
@@ -445,7 +458,47 @@ Team logo (28px, ESPN CDN) + full name + clinch note. Monospace stat columns. Ho
 
 ---
 
-## Box Score Panel
+## Game Detail Page (`/scores/{league}/{gameId}`)
+
+Server component. Fetches game by `external_id = gameId` from Supabase. Renders `GameDetailClient`.
+Returns 404 for unknown league slugs or game IDs.
+
+### GameDetailClient
+
+Client component. Props: `game: Game, leagueSlug: string`.
+
+**Sticky sub-header (top-14):**
+- Back arrow → `/scores/{leagueSlug}`
+- "{league} Scores" breadcrumb
+- LIVE badge (animated green dot) when game is in progress
+- Share icon button (copies `window.location.href` to clipboard)
+
+**Three collapsible sections** (chevron toggle):
+
+1. **Overview** (open by default)
+   - Full game card: same visual as scores page (logos, scores, linescore, situation, leaders)
+   - "Auto-refreshes every 30 seconds" hint shown for live games
+   - Live games: `setInterval(30s)` polls Supabase by `game.id` and updates `currentGame` state
+
+2. **Box Score** (collapsed by default)
+   - ESPN summary fetched lazily on first open (`summaryFetched` ref prevents re-fetch)
+   - Two team tabs (away | home): team logo (24px) + abbreviation; active tab = blue underline
+   - Shows stats for the selected team only
+   - Per sport:
+     - **NBA/NCAAB**: starters / bench divider / DNP row / team totals
+     - **NFL**: Passing / Rushing / Receiving tables for selected team + Team Stats key-value list
+     - **MLB**: Pitching table + Batting table (with team totals row) for selected team
+   - Loading: animated "Loading box score…" text
+   - Error: "Box score unavailable"
+   - Scheduled with no data: "Game hasn't started yet"
+
+3. **Highlights** (collapsed by default, MLB only — shown when `game.mlb_game_pk` is set)
+   - Same MLB Stats API fetch + inline video as in BoxScorePanel
+   - Fetched lazily: `MlbHighlightsSection` only mounts when section is open
+
+**StatTable** sticky left column uses `bg-gray-950` (matches page background).
+
+## Box Score Panel (legacy)
 
 Inline expandable panel on every game card in `/scores`. No page navigation.
 
@@ -556,6 +609,14 @@ StandingsView       // 'Division' | 'Conference' | 'League'
 - [x] BoxScorePanel: NBA/NCAAB player tables (starters/bench/totals), NFL passing/rushing/receiving/team stats, MLB pitching+batting
 - [x] BoxScorePanel: MLB Highlights section (mlb_game_pk → MLB Stats API, inline video, up to 10 clips)
 - [x] NavBar: Standings link added alongside Feed + Scores
+- [x] /scores/{league} route — pre-selects league tab (nba/nfl/mlb/ncaab slugs)
+- [x] /scores/{league}/{gameId} route — individual game detail page
+- [x] GameDetailClient: sticky sub-header with back link, live badge, share button
+- [x] GameDetailClient: Overview section (full game card, 30s live auto-refresh)
+- [x] GameDetailClient: Box Score section (team tabs, ESPN summary lazy-fetch, per-sport layout)
+- [x] GameDetailClient: Highlights section (MLB only, lazy-fetch, inline video)
+- [x] ScoresClient: game cards navigate to /scores/{league}/{gameId}, no inline expansion
+- [x] NavBar: Scores link active on all /scores/* paths
 - [ ] Mixpanel events (TODO MAS — see above)
 - [ ] Disable email confirmations in Supabase Auth settings (TODO MAS — manual dashboard action)
 
