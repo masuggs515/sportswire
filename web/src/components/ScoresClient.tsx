@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Game, GameCompetitor, GameDetails } from '@/lib/types'
 import BoxScorePanel from './BoxScorePanel'
@@ -424,12 +424,34 @@ function SeasonBadge({ seasonType }: { seasonType: number | null | undefined }) 
 
 // ─── GameCard ────────────────────────────────────────────────────────────────
 
-function GameCard({ game }: { game: Game }) {
-  const [boxScoreOpen, setBoxScoreOpen] = useState(false)
+interface GameCardProps {
+  game: Game
+  isExpanded: boolean
+  onToggle: () => void
+}
+
+function GameCard({ game, isExpanded, onToggle }: GameCardProps) {
   const isLive = game.status === 'in_progress'
   const isFinal = game.status === 'final'
   const isScheduled = game.status === 'scheduled'
   const details = game.details
+  const canExpand = isLive || isFinal
+
+  // Touch-scroll prevention: only fire toggle if pointer didn't move significantly
+  const pointerStart = useRef<{ x: number; y: number } | null>(null)
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStart.current = { x: e.clientX, y: e.clientY }
+  }
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStart.current || !canExpand) return
+    const dx = Math.abs(e.clientX - pointerStart.current.x)
+    const dy = Math.abs(e.clientY - pointerStart.current.y)
+    pointerStart.current = null
+    if (dx > 8 || dy > 8) return // scroll gesture — ignore
+    onToggle()
+  }
 
   // Find competitors from details if available, else fall back to teamConfig
   const homeComp = details?.competitors.find(c => c.homeAway === 'home')
@@ -456,113 +478,124 @@ function GameCard({ game }: { game: Game }) {
   const showLinescore = (isLive || isFinal) && homeComp && awayComp &&
     (homeComp.linescores.length > 0 || awayComp.linescores.length > 0)
 
+  // Border style: expanded gets accent left border; live gets green tint
+  const borderClass = isExpanded
+    ? 'border-blue-500/50'
+    : isLive
+    ? 'border-green-500/40'
+    : 'border-gray-800'
+
   return (
-    <div className={`bg-gray-900 border rounded-xl overflow-hidden ${isLive ? 'border-green-500/40' : 'border-gray-800'}`}>
+    <div
+      className={`bg-gray-900 border rounded-xl overflow-hidden ${borderClass} ${
+        isExpanded ? 'border-l-2' : ''
+      } transition-colors duration-150 ${canExpand ? 'cursor-pointer select-none' : ''}`}
+      onPointerDown={canExpand ? handlePointerDown : undefined}
+      onPointerUp={canExpand ? handlePointerUp : undefined}
+    >
       <div className="p-4">
-      {/* Status row */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            {game.league}
-          </span>
-          {game.league === 'MLB' && (
-            <SeasonBadge seasonType={details?.seasonType} />
-          )}
-          {game.broadcast && (
-            <span className="text-xs text-gray-600">{game.broadcast}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          {isLive && (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
-              <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-              {statusDisplay}
+        {/* Status row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              {game.league}
             </span>
-          )}
-          {isFinal && (
-            <span className="text-xs font-semibold text-gray-500">FINAL</span>
-          )}
-          {isScheduled && (
-            <span className="text-xs text-gray-400">{formatTime(game.game_time)}</span>
-          )}
-          {/* Box score chevron */}
-          <button
-            onClick={() => setBoxScoreOpen(o => !o)}
-            className="text-gray-600 hover:text-gray-400 transition-colors"
-            aria-label={boxScoreOpen ? 'Collapse box score' : 'Expand box score'}
-          >
-            <svg
-              className={`w-4 h-4 transition-transform duration-200 ${boxScoreOpen ? 'rotate-180' : ''}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      {/* Teams */}
-      <div className="flex items-stretch gap-4">
-        {/* Away */}
-        <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <TeamLogo logo={awayComp?.team.logo} abbr={awayAbbr} color={awayColor} />
-          <span className="text-xs text-gray-400">{awayAbbr}</span>
-        </div>
-
-        {/* Scores / vs */}
-        <div className="flex-1 flex items-center justify-between">
-          <div className="flex-1">
-            <div className={`text-base font-semibold mb-0.5 ${awayWins ? 'text-white' : 'text-gray-300'}`}>
-              {awayName}
-            </div>
-            <div className={`text-base font-semibold ${homeWins ? 'text-white' : 'text-gray-300'}`}>
-              {homeName}
-            </div>
+            {game.league === 'MLB' && (
+              <SeasonBadge seasonType={details?.seasonType} />
+            )}
+            {game.broadcast && (
+              <span className="text-xs text-gray-600">{game.broadcast}</span>
+            )}
           </div>
-          <div className="text-right">
-            <div className={`text-xl tabular-nums ${awayWins ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-              {(isLive || isFinal) ? game.away_score : '—'}
-            </div>
-            <div className={`text-xl tabular-nums ${homeWins ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
-              {(isLive || isFinal) ? game.home_score : '—'}
-            </div>
+          <div className="flex items-center gap-3">
+            {isLive && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-green-400">
+                <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                {statusDisplay}
+              </span>
+            )}
+            {isFinal && (
+              <span className="text-xs font-semibold text-gray-500">FINAL</span>
+            )}
+            {isScheduled && (
+              <span className="text-xs text-gray-400">{formatTime(game.game_time)}</span>
+            )}
           </div>
         </div>
 
-        {/* Home */}
-        <div className="flex flex-col items-center gap-1 flex-shrink-0">
-          <TeamLogo logo={homeComp?.team.logo} abbr={homeAbbr} color={homeColor} />
-          <span className="text-xs text-gray-400">{homeAbbr}</span>
+        {/* Teams */}
+        <div className="flex items-stretch gap-4">
+          {/* Away */}
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <TeamLogo logo={awayComp?.team.logo} abbr={awayAbbr} color={awayColor} />
+            <span className="text-xs text-gray-400">{awayAbbr}</span>
+          </div>
+
+          {/* Scores / vs */}
+          <div className="flex-1 flex items-center justify-between">
+            <div className="flex-1">
+              <div className={`text-base font-semibold mb-0.5 ${awayWins ? 'text-white' : 'text-gray-300'}`}>
+                {awayName}
+              </div>
+              <div className={`text-base font-semibold ${homeWins ? 'text-white' : 'text-gray-300'}`}>
+                {homeName}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className={`text-xl tabular-nums ${awayWins ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
+                {(isLive || isFinal) ? game.away_score : '—'}
+              </div>
+              <div className={`text-xl tabular-nums ${homeWins ? 'font-bold text-white' : 'font-medium text-gray-400'}`}>
+                {(isLive || isFinal) ? game.home_score : '—'}
+              </div>
+            </div>
+          </div>
+
+          {/* Home */}
+          <div className="flex flex-col items-center gap-1 flex-shrink-0">
+            <TeamLogo logo={homeComp?.team.logo} abbr={homeAbbr} color={homeColor} />
+            <span className="text-xs text-gray-400">{homeAbbr}</span>
+          </div>
         </div>
+
+        {/* Win probability for scheduled */}
+        {isScheduled && game.home_win_prob !== null && (
+          <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-600 text-center">
+            {Math.round(game.home_win_prob * 100)}% {homeAbbr} · {Math.round((1 - game.home_win_prob) * 100)}% {awayAbbr}
+          </div>
+        )}
+
+        {/* Linescore table */}
+        {showLinescore && homeComp && awayComp && (
+          <LinescoreTable game={game} homeComp={homeComp} awayComp={awayComp} />
+        )}
+
+        {/* Live situation (MLB: count + bases, NFL: down & distance) */}
+        {isLive && details && (
+          <LiveSituation game={game} details={details} />
+        )}
+
+        {/* Leaders / top performers */}
+        {details && (
+          <Leaders game={game} details={details} />
+        )}
+
+        {/* Box score affordance — bottom center */}
+        {canExpand && (
+          <div className="mt-3 pt-2 text-center">
+            <span className="text-[11px] text-gray-600 underline underline-offset-2 decoration-gray-700">
+              {isExpanded
+                ? '↑ Hide'
+                : isLive
+                ? 'Live Box Score'
+                : 'Box Score'}
+            </span>
+          </div>
+        )}
       </div>
-
-      {/* Win probability for scheduled */}
-      {isScheduled && game.home_win_prob !== null && (
-        <div className="mt-3 pt-3 border-t border-gray-800 text-xs text-gray-600 text-center">
-          {Math.round(game.home_win_prob * 100)}% {homeAbbr} · {Math.round((1 - game.home_win_prob) * 100)}% {awayAbbr}
-        </div>
-      )}
-
-      {/* Linescore table */}
-      {showLinescore && homeComp && awayComp && (
-        <LinescoreTable game={game} homeComp={homeComp} awayComp={awayComp} />
-      )}
-
-      {/* Live situation (MLB: count + bases, NFL: down & distance) */}
-      {isLive && details && (
-        <LiveSituation game={game} details={details} />
-      )}
-
-      {/* Leaders / top performers */}
-      {details && (
-        <Leaders game={game} details={details} />
-      )}
-      </div>{/* end p-4 */}
 
       {/* Inline box score panel */}
-      {boxScoreOpen && (
-        <BoxScorePanel game={game} onClose={() => setBoxScoreOpen(false)} />
-      )}
+      {isExpanded && <BoxScorePanel game={game} />}
     </div>
   )
 }
@@ -574,11 +607,15 @@ function Section({
   games,
   accent,
   subtitle,
+  expandedId,
+  onToggle,
 }: {
   title: string
   games: Game[]
   accent?: string
   subtitle?: string
+  expandedId: string | null
+  onToggle: (id: string) => void
 }) {
   if (games.length === 0) return null
 
@@ -591,7 +628,14 @@ function Section({
         <span className="text-gray-600 text-xs ml-auto">{games.length} game{games.length !== 1 ? 's' : ''}</span>
       </div>
       <div className="px-4 space-y-3">
-        {games.map(g => <GameCard key={g.id} game={g} />)}
+        {games.map(g => (
+          <GameCard
+            key={g.id}
+            game={g}
+            isExpanded={expandedId === g.id}
+            onToggle={() => onToggle(g.id)}
+          />
+        ))}
       </div>
     </div>
   )
@@ -602,6 +646,11 @@ function Section({
 export default function ScoresClient({ initialGames, serverNow }: ScoresClientProps) {
   const [activeTab, setActiveTab] = useState<LeagueTab>('All')
   const [games, setGames] = useState<Game[]>(initialGames)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+
+  const handleToggle = (id: string) => {
+    setExpandedId(prev => prev === id ? null : id)
+  }
 
   // Supabase Realtime for live score updates
   useEffect(() => {
@@ -711,6 +760,8 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
               title="Live"
               games={live}
               accent="#22C55E"
+              expandedId={expandedId}
+              onToggle={handleToggle}
             />
 
             {/* TODAY */}
@@ -719,6 +770,8 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
               games={todayGames}
               accent="#3B82F6"
               subtitle={today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              expandedId={expandedId}
+              onToggle={handleToggle}
             />
 
             {/* UPCOMING — grouped by date */}
@@ -728,6 +781,8 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
                 title={dateLabel}
                 games={dateGames}
                 accent="#6B7280"
+                expandedId={expandedId}
+                onToggle={handleToggle}
               />
             ))}
 
@@ -737,6 +792,8 @@ export default function ScoresClient({ initialGames, serverNow }: ScoresClientPr
               games={recent}
               accent="#4B5563"
               subtitle={yesterday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              expandedId={expandedId}
+              onToggle={handleToggle}
             />
           </>
         )}

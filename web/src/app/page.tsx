@@ -1,71 +1,12 @@
-import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { Story, Game, FavoriteTeam, StoryDetail } from '@/lib/types'
+import { Story, Game, FavoriteTeam } from '@/lib/types'
 import FeedClient from '@/components/FeedClient'
-import ScoresClient from '@/components/ScoresClient'
-import StandingsClient from '@/components/StandingsClient'
-import StoryDetailClient from '@/components/StoryDetailClient'
 
-interface PageProps {
-  searchParams: Promise<{ view?: string; id?: string }>
-}
+export const revalidate = 60
 
-export default async function Page({ searchParams }: PageProps) {
-  const { view, id } = await searchParams
+export default async function Page() {
   const supabase = await createClient()
 
-  // ── Story detail ──────────────────────────────────────────────────────────
-  if (view === 'story') {
-    if (!id) notFound()
-    const { data, error } = await supabase.functions.invoke('get-story-detail', {
-      body: { storyId: id },
-    })
-    if (error || !data || data.error) notFound()
-    return <StoryDetailClient detail={data as StoryDetail} />
-  }
-
-  // ── Scores ────────────────────────────────────────────────────────────────
-  if (view === 'scores') {
-    const yesterday = new Date()
-    yesterday.setDate(yesterday.getDate() - 1)
-    yesterday.setHours(0, 0, 0, 0)
-    const threeDaysOut = new Date()
-    threeDaysOut.setDate(threeDaysOut.getDate() + 3)
-    threeDaysOut.setHours(23, 59, 59, 999)
-
-    const [rangeResult, liveResult] = await Promise.all([
-      supabase
-        .from('games')
-        .select('*')
-        .gte('game_time', yesterday.toISOString())
-        .lte('game_time', threeDaysOut.toISOString())
-        .order('game_time', { ascending: true }),
-      supabase
-        .from('games')
-        .select('*')
-        .eq('status', 'in_progress')
-        .order('game_time', { ascending: true }),
-    ])
-
-    const seen = new Set<string>()
-    const games: Game[] = []
-    for (const g of [...(liveResult.data ?? []), ...(rangeResult.data ?? [])]) {
-      if (!seen.has(g.id)) {
-        seen.add(g.id)
-        games.push(g as Game)
-      }
-    }
-    games.sort((a, b) => new Date(a.game_time).getTime() - new Date(b.game_time).getTime())
-
-    return <ScoresClient initialGames={games} serverNow={new Date().toISOString()} />
-  }
-
-  // ── Standings ─────────────────────────────────────────────────────────────
-  if (view === 'standings') {
-    return <StandingsClient />
-  }
-
-  // ── Feed (default) ────────────────────────────────────────────────────────
   const { data: stories } = await supabase
     .from('stories')
     .select('id, headline, ai_summary, league, team_tags, published_at, is_hot, image_url, article_url')

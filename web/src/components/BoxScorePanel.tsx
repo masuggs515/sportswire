@@ -20,8 +20,10 @@ const SPORT_PATH: Record<string, string> = {
   NCAAB: 'basketball/mens-college-basketball',
 }
 
-function summaryUrl(league: string, eventId: string): string {
+function summaryUrl(league: string, externalId: string): string {
   const path = SPORT_PATH[league] ?? 'basketball/nba'
+  // external_id is stored as "nba_401585678" — strip the prefix to get the ESPN event ID
+  const eventId = externalId.includes('_') ? externalId.replace(/^[^_]+_/, '') : externalId
   return `https://site.api.espn.com/apis/site/v2/sports/${path}/summary?event=${eventId}`
 }
 
@@ -361,7 +363,7 @@ function MlbBox({ players }: { players: EspnBoxPlayer[] }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function BoxScorePanel({ game, onClose }: { game: Game; onClose: () => void }) {
+export default function BoxScorePanel({ game }: { game: Game }) {
   const [data,    setData]    = useState<EspnSummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState(false)
@@ -383,18 +385,8 @@ export default function BoxScorePanel({ game, onClose }: { game: Game; onClose: 
 
   return (
     <div className="border-t border-gray-700 bg-gray-900 px-4 pt-4 pb-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
         <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">Box Score</span>
-        <button
-          onClick={onClose}
-          className="text-gray-600 hover:text-gray-400 transition-colors"
-          aria-label="Close box score"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-          </svg>
-        </button>
       </div>
 
       {loading && (
