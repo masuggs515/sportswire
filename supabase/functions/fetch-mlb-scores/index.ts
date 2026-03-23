@@ -143,10 +143,18 @@ serve(async () => {
     );
   }
 
-  // ── Fetch MLB schedule once for today ─────────────────────────────────────
-  // Use UTC date since ESPN game dates are UTC-based; MLB schedule date param is YYYY-MM-DD.
-  const dateStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
-  const gamePkMap = await buildGamePkMap(dateStr);
+  // ── Fetch MLB schedule for today + yesterday ──────────────────────────────
+  // US evening games (e.g. 8 PM EDT) start after midnight UTC, so UTC-today
+  // doesn't match the MLB Stats API's local-date schedule for that game.
+  // Fetching both dates ensures we always find the gamePk.
+  const todayStr     = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const yesterday    = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+  const todayMap     = await buildGamePkMap(todayStr);
+  const yesterdayMap = await buildGamePkMap(yesterdayStr);
+  const gamePkMap    = new Map<string, number>();
+  for (const [k, v] of yesterdayMap) gamePkMap.set(k, v);
+  for (const [k, v] of todayMap)     gamePkMap.set(k, v); // today wins on conflict
 
   const supabase = createClient(supabaseUrl!, secretKey!);
   let upserted  = 0;
