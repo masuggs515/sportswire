@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Game, GameCompetitor, GameDetails } from '@/lib/types'
 import { getTeam } from '@/lib/teamConfig'
 import { createClient } from '@/lib/supabase/client'
@@ -13,7 +13,6 @@ type LeagueTab = typeof LEAGUE_TABS[number]
 interface ScoresClientProps {
   initialGames: Game[]
   serverNow: string
-  initialLeague?: string
 }
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -598,11 +597,14 @@ function Section({
 
 // ─── Main ────────────────────────────────────────────────────────────────────
 
-export default function ScoresClient({ initialGames, serverNow, initialLeague }: ScoresClientProps) {
-  const validInitial = LEAGUE_TABS.includes(initialLeague as LeagueTab)
-    ? (initialLeague as LeagueTab)
+export default function ScoresClient({ initialGames, serverNow }: ScoresClientProps) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const tabParam = searchParams.get('tab')
+  const activeTab: LeagueTab = LEAGUE_TABS.includes(tabParam as LeagueTab)
+    ? (tabParam as LeagueTab)
     : 'All'
-  const [activeTab, setActiveTab] = useState<LeagueTab>(validInitial)
+
   const [games, setGames] = useState<Game[]>(initialGames)
 
   // Supabase Realtime for live score updates
@@ -678,7 +680,7 @@ export default function ScoresClient({ initialGames, serverNow, initialLeague }:
         {LEAGUE_TABS.map(tab => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => router.replace(tab === 'All' ? '/scores' : `/scores?tab=${tab}`, { scroll: false })}
             className={`px-4 py-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
               activeTab === tab
                 ? 'border-blue-500 text-white'
