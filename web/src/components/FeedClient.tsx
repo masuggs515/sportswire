@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Story, Game, FavoriteTeam } from '@/lib/types'
 import StoryCard from './StoryCard'
 import GameTicker from './GameTicker'
@@ -9,11 +9,23 @@ import { createClient } from '@/lib/supabase/client'
 
 // Tabs that filter by story.league value
 const LEAGUE_TABS = ['NBA', 'NFL', 'NCAAB', 'CFB', 'MLB'] as const
+const LEAGUE_TABS_SET = new Set<string>(['All', 'NBA', 'NFL', 'NCAAB', 'CFB', 'MLB'])
 
 // CFB tab maps to league 'NCAAF' in the DB
 const LEAGUE_TAB_MAP: Record<string, string> = {
   CFB: 'NCAAF',
 }
+
+// Tags to search for a given team tab
+function tagsForTab(tab: string): string[] {
+  if (tab === 'Panthers') return ['CAR', 'Panthers']
+  if (tab === 'Yankees')  return ['NYY', 'Yankees']
+  if (tab === 'Duke')     return ['DUKE', 'Duke']
+  if (tab === 'Oregon')   return ['Oregon', 'Ducks', 'ORE']
+  return [tab] // favorite team abbreviation
+}
+
+const STORY_SELECT = 'id, headline, ai_summary, league, team_tags, published_at, is_hot, image_url, article_url'
 
 interface FeedClientProps {
   initialStories: Story[]
@@ -39,6 +51,17 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
   const [stories]                   = useState<Story[]>(initialStories)
   const [games, setGames]           = useState<Game[]>(initialGames)
   const [activeTab, setActiveTab]   = useState('All')
+
+  // Team-tab: server-fetched stories + pagination.
+  // `tab` tracks which tab the loaded stories belong to — mismatch means loading.
+  const [teamState, setTeamState] = useState<{
+    tab: string
+    stories: Story[]
+    page: number
+    hasMore: boolean
+    loadingMore: boolean
+  }>({ tab: '', stories: [], page: 0, hasMore: false, loadingMore: false })
+  const fetchIdRef = useRef(0)
 
   // Sync localStorage followed teams
   useEffect(() => {
@@ -86,6 +109,50 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
     return () => { supabase.removeChannel(channel) }
   }, [])
 
+  // Derive effective tab early so fetch effect can use it
+  // (tabs memo is below — inline the isTeamTab check against activeTab directly)
+  const isTeamTab = (tab: string) => tab !== 'All' && !LEAGUE_TABS_SET.has(tab)
+
+  // Fetch stories from server whenever a team-specific tab is selected.
+  // No synchronous setState here — loading is derived from tab mismatch.
+  useEffect(() => {
+    if (!isTeamTab(activeTab)) return
+    const fetchId = ++fetchIdRef.current
+    const tags = tagsForTab(activeTab)
+    const tab = activeTab
+    createClient()
+      .from('stories')
+      .select(STORY_SELECT)
+      .overlaps('team_tags', tags)
+      .order('published_at', { ascending: false })
+      .range(0, 9)
+      .then(({ data }) => {
+        if (fetchIdRef.current !== fetchId) return
+        const rows = (data ?? []) as Story[]
+        setTeamState({ tab, stories: rows, page: 0, hasMore: rows.length === 10, loadingMore: false })
+      })
+  }, [activeTab])
+
+  async function loadMoreTeamStories() {
+    const nextPage = teamState.page + 1
+    setTeamState(prev => ({ ...prev, loadingMore: true }))
+    const tags = tagsForTab(activeTab)
+    const { data } = await createClient()
+      .from('stories')
+      .select(STORY_SELECT)
+      .overlaps('team_tags', tags)
+      .order('published_at', { ascending: false })
+      .range(nextPage * 10, nextPage * 10 + 9)
+    const rows = (data ?? []) as Story[]
+    setTeamState(prev => ({
+      ...prev,
+      stories: [...prev.stories, ...rows],
+      page: nextPage,
+      hasMore: rows.length === 10,
+      loadingMore: false,
+    }))
+  }
+
   // Build dynamic tab list based on favorites
   // Order: All | NBA | [NBA favs] | NFL | [NFL favs] | Panthers (skip if CAR in favs) | NCAAB | CFB | Oregon (skip if ORE in favs) | MLB | [MLB favs] | Yankees
   const tabs = useMemo(() => {
@@ -106,6 +173,7 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
 
   // Derive effective tab — if a favorite tab was removed, fall back to 'All' without setState
   const effectiveTab = tabs.includes(activeTab) ? activeTab : 'All'
+  const isActiveTeamTab = isTeamTab(effectiveTab)
 
   // Story sort: combine favorites + followed teams for pinning
   const pinnedAbbrs = useMemo(() => {
@@ -179,7 +247,28 @@ export default function FeedClient({ initialStories, initialGames, initialFavori
 
       {/* Story Feed */}
       <div className="px-4 py-4 space-y-3">
-        {sorted.length === 0 ? (
+        {isActiveTeamTab ? (
+          teamState.tab !== effectiveTab ? (
+            <div className="text-center text-gray-600 py-12">Loading…</div>
+          ) : teamState.stories.length === 0 ? (
+            <div className="text-center text-gray-600 py-12">No stories yet</div>
+          ) : (
+            <>
+              {teamState.stories.map(story => (
+                <StoryCard key={story.id} story={story} followed={[...pinnedAbbrs]} />
+              ))}
+              {teamState.hasMore && (
+                <button
+                  onClick={loadMoreTeamStories}
+                  disabled={teamState.loadingMore}
+                  className="w-full py-3 text-sm text-gray-400 hover:text-white border border-gray-800 hover:border-gray-600 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {teamState.loadingMore ? 'Loading…' : 'Load more'}
+                </button>
+              )}
+            </>
+          )
+        ) : sorted.length === 0 ? (
           <div className="text-center text-gray-600 py-12">No stories yet</div>
         ) : (
           sorted.map(story => (
