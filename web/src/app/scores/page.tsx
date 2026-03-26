@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { Game } from '@/lib/types'
 import ScoresClient from '@/components/ScoresClient'
@@ -38,5 +39,9 @@ export default async function ScoresPage() {
   }
   games.sort((a, b) => new Date(a.game_time).getTime() - new Date(b.game_time).getTime())
 
-  return <ScoresClient initialGames={games} serverNow={new Date().toISOString()} />
+  return (
+    <Suspense>
+      <ScoresClient initialGames={games} serverNow={new Date().toISOString()} />
+    </Suspense>
+  )
 }

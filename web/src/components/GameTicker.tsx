@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { Game, FavoriteTeam } from '@/lib/types'
 
 interface GameTickerProps {
@@ -54,6 +55,7 @@ function TeamLogo({ logo, abbr, color }: { logo?: string | null; abbr: string; c
 // ─── TickerCard ───────────────────────────────────────────────────────────────
 
 function TickerCard({ game, isFavorite }: { game: Game; isFavorite: boolean }) {
+  const router = useRouter()
   const isLive = game.status === 'in_progress'
   const isFinal = game.status === 'final'
 
@@ -77,13 +79,16 @@ function TickerCard({ game, isFavorite }: { game: Game; isFavorite: boolean }) {
   const homeWins = isFinal && game.home_score > game.away_score
 
   return (
-    <div className={`flex-shrink-0 rounded-xl p-3 w-32 border ${
-      isLive
-        ? 'bg-gray-900 border-green-500/40'
-        : isFavorite
-        ? 'bg-gray-900 border-blue-500/30'
-        : 'bg-gray-900 border-gray-800'
-    }`}>
+    <div
+      className={`flex-shrink-0 rounded-xl p-3 w-32 border cursor-pointer active:opacity-70 ${
+        isLive
+          ? 'bg-gray-900 border-green-500/40'
+          : isFavorite
+          ? 'bg-gray-900 border-blue-500/30'
+          : 'bg-gray-900 border-gray-800'
+      }`}
+      onClick={() => router.push(`/scores/${game.league.toLowerCase()}/${game.external_id}`)}
+    >
       {/* Status */}
       <div className="text-center mb-2">
         {isLive ? (
